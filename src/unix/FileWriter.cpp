@@ -17,7 +17,7 @@
 using namespace VTFLib;
 using namespace VTFLib::IO::Writers;
 
-vlBool CFileWriter::Open()
+vlBool CFileWriter::Open(VTFLibError& Error)
 {
 	this->Close();
 
@@ -25,7 +25,7 @@ vlBool CFileWriter::Open()
 
 	if(this->hFile == NULL)
 	{
-		LastError.Set("Error opening file.", vlTrue);
+		Error.Set("Error opening file.", vlTrue);
 
 		return vlFalse;
 	}
@@ -42,7 +42,7 @@ vlVoid CFileWriter::Close()
 	}
 }
 
-vlSSize CFileWriter::GetStreamSize() const
+vlSSize CFileWriter::GetStreamSize(VTFLibError& Error) const
 {
 	if(this->hFile == NULL)
 	{
@@ -52,14 +52,14 @@ vlSSize CFileWriter::GetStreamSize() const
 	struct stat buf;
 
 	if(fstat(fileno(this->hFile), &buf) != 0) {
-		LastError.Set("fstat() failed.", vlTrue);
+		Error.Set("fstat() failed.", vlTrue);
 		return 0;
 	}
 
 	return buf.st_size;
 }
 
-vlSSize CFileWriter::GetStreamPointer() const
+vlSSize CFileWriter::GetStreamPointer(VTFLibError& Error) const
 {
 	if(this->hFile == NULL)
 	{
@@ -69,14 +69,14 @@ vlSSize CFileWriter::GetStreamPointer() const
 	vlOffset offset = ftello(this->hFile);
 	if(offset < 0)
 	{
-		LastError.Set("ftello() failed.", vlTrue);
+		Error.Set("ftello() failed.", vlTrue);
 		return 0;
 	}
 
 	return offset;
 }
 
-vlSSize CFileWriter::Seek(vlOffset lOffset, VLSeekMode uiMode)
+vlSSize CFileWriter::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -84,13 +84,13 @@ vlSSize CFileWriter::Seek(vlOffset lOffset, VLSeekMode uiMode)
 	}
 
 	if(fseeko(this->hFile, lOffset, uiMode) != 0) {
-		LastError.Set("fseeko() failed.", vlTrue);
+		Error.Set("fseeko() failed.", vlTrue);
 		return 0;
 	}
-	return GetStreamPointer();
+	return GetStreamPointer(Error);
 }
 
-vlBool CFileWriter::Write(vlChar cChar)
+vlBool CFileWriter::Write(vlChar cChar, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -99,7 +99,7 @@ vlBool CFileWriter::Write(vlChar cChar)
 
 	if(fputc(cChar, this->hFile) == EOF)
 	{
-		LastError.Set("fputc() failed.", vlTrue);
+		Error.Set("fputc() failed.", vlTrue);
 		return vlFalse;
 	}
 	else
@@ -108,7 +108,7 @@ vlBool CFileWriter::Write(vlChar cChar)
 	}
 }
 
-vlSize CFileWriter::Write(vlVoid *vData, vlSize uiBytes)
+vlSize CFileWriter::Write(vlVoid *vData, vlSize uiBytes, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -117,7 +117,7 @@ vlSize CFileWriter::Write(vlVoid *vData, vlSize uiBytes)
 
 	if (fwrite(vData, uiBytes, 1, this->hFile) != 1 && ferror(this->hFile))
 	{
-		LastError.Set("fwrite() failed.", vlTrue);
+		Error.Set("fwrite() failed.", vlTrue);
 		return 0;
 	}
 	else

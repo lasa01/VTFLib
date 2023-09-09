@@ -114,7 +114,6 @@ namespace VTFLib
 	typedef std::vector<VTFLib::CVMTFile *> CMaterialVector;
 
 	extern vlBool bInitialized;
-	VTFLIB_API extern Diagnostics::CError LastError;
 
 	extern CVTFFile *Image;
 	extern CImageVector *ImageVector;
@@ -152,7 +151,15 @@ namespace VTFLib
 #endif
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
+typedef VTFLib::CVTFFile VTFLibVTFFile;
+typedef VTFLib::CVMTFile VTFLibVMTFile;
+typedef VTFLib::Diagnostics::CError VTFLibError;
+#else
+typedef struct VTFLibVTFFile VTFLibVTFFile;
+typedef struct VTFLibVMTFile VTFLibVMTFile;
+typedef struct VTFLibError VTFLibError;
 #endif
 
 typedef enum tagVTFLibOption
@@ -191,11 +198,8 @@ VTFLIB_API vlUInt vlGetVersion();
 //! Return the VTFLib version as a string.
 VTFLIB_API const vlChar *vlGetVersionString();
 
-//! Return the last error message as a string.
-VTFLIB_API const vlChar *vlGetLastError();
-
 //! Initialisation function
-VTFLIB_API vlBool vlInitialize();
+VTFLIB_API vlBool vlInitialize(VTFLibError **Error);
 
 //! Shutdown function
 VTFLIB_API vlVoid vlShutdown();

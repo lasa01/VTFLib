@@ -18,7 +18,6 @@ using namespace VTFLib;
 namespace VTFLib
 {
 	vlBool bInitialized = vlFalse;
-	Diagnostics::CError LastError;
 
 	CVTFFile *Image = 0;
 	CImageVector *ImageVector = 0;
@@ -73,23 +72,20 @@ VTFLIB_API const vlChar *vlGetVersionString()
 }
 
 //
-// vlGetLastError()
-// Gets the last error of a failed function.
-//
-VTFLIB_API const vlChar *vlGetLastError()
-{
-	return LastError.Get();
-}
-
-//
 // vlInitialize()
 // Initializes all resources.
 //
-VTFLIB_API vlBool vlInitialize()
+VTFLIB_API vlBool vlInitialize(VTFLibError **Error)
 {
 	if(bInitialized)
 	{
-		LastError.Set("VTFLib already initialized.");
+		if (Error != 0)
+		{
+			auto* NewError = new VTFLibError();
+			NewError->Set("VTFLib already initialized.");
+			*Error = NewError;
+		}
+
 		return vlFalse;
 	}
 

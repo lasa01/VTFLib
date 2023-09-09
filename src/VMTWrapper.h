@@ -14,6 +14,7 @@
 
 #include "stdafx.h"
 #include "VMTFile.h"
+#include "VTFLib.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,28 +24,28 @@ extern "C" {
 // Memory managment routines.
 //
 
-VTFLIB_API vlBool vlMaterialIsBound();
-VTFLIB_API vlBool vlBindMaterial(vlUInt uiMaterial);
+VTFLIB_API vlBool vlMaterialIsBound(VTFLibError* Error);
+VTFLIB_API vlBool vlBindMaterial(vlUInt uiMaterial, VTFLibError* Error);
 
-VTFLIB_API vlBool vlCreateMaterial(vlUInt *uiMaterial);
+VTFLIB_API vlBool vlCreateMaterial(vlUInt *uiMaterial, VTFLibError* Error);
 VTFLIB_API vlVoid vlDeleteMaterial(vlUInt uiMaterial);
 
 //
 // Library routines.  (Basically class wrappers.)
 //
 
-VTFLIB_API vlBool vlMaterialCreate(const vlChar *cRoot);
+VTFLIB_API vlBool vlMaterialCreate(const vlChar *cRoot, VTFLibError* Error);
 VTFLIB_API vlVoid vlMaterialDestroy();
 
-VTFLIB_API vlBool vlMaterialIsLoaded();
+VTFLIB_API vlBool vlMaterialIsLoaded(VTFLibError** Error);
 
-VTFLIB_API vlBool vlMaterialLoad(const vlChar *cFileName);
-VTFLIB_API vlBool vlMaterialLoadLump(const vlVoid *lpData, vlSize uiBufferSize);
-VTFLIB_API vlBool vlMaterialLoadProc(vlVoid *pUserData);
+VTFLIB_API vlBool vlMaterialLoad(const vlChar *cFileName, VTFLibError* Error);
+VTFLIB_API vlBool vlMaterialLoadLump(const vlVoid *lpData, vlSize uiBufferSize, VTFLibError* Error);
+VTFLIB_API vlBool vlMaterialLoadProc(vlVoid *pUserData, VTFLibError* Error);
 
-VTFLIB_API vlBool vlMaterialSave(const vlChar *cFileName);
-VTFLIB_API vlBool vlMaterialSaveLump(vlVoid *lpData, vlSize uiBufferSize, vlSize *uiSize);
-VTFLIB_API vlBool vlMaterialSaveProc(vlVoid *pUserData);
+VTFLIB_API vlBool vlMaterialSave(const vlChar *cFileName, VTFLibError* Error);
+VTFLIB_API vlBool vlMaterialSaveLump(vlVoid *lpData, vlSize uiBufferSize, vlSize *uiSize, VTFLibError* Error);
+VTFLIB_API vlBool vlMaterialSaveProc(vlVoid *pUserData, VTFLibError* Error);
 
 //
 // Node routines.

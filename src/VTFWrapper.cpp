@@ -21,11 +21,11 @@ using namespace VTFLib;
 // vlImageBound()
 // Returns true if an image is bound, false otherwise.
 //
-VTFLIB_API vlBool vlImageIsBound()
+VTFLIB_API vlBool vlImageIsBound(VTFLibError* Error)
 {
 	if(!bInitialized)
 	{
-		LastError.Set("VTFLib not initialized.");
+		Error->Set("VTFLib not initialized.");
 		return vlFalse;
 	}
 
@@ -37,17 +37,17 @@ VTFLIB_API vlBool vlImageIsBound()
 // Bind an image to operate on.
 // All library routines will use this image.
 //
-VTFLIB_API vlBool vlBindImage(vlUInt uiImage)
+VTFLIB_API vlBool vlBindImage(vlUInt uiImage, VTFLibError* Error)
 {
 	if(!bInitialized)
 	{
-		LastError.Set("VTFLib not initialized.");
+		Error->Set("VTFLib not initialized.");
 		return vlFalse;
 	}
 
 	if(uiImage >= ImageVector->size() || (*ImageVector)[uiImage] == 0)
 	{
-		LastError.Set("Invalid image.");
+		Error->Set("Invalid image.");
 		return vlFalse;
 	}
 
@@ -63,11 +63,11 @@ VTFLIB_API vlBool vlBindImage(vlUInt uiImage)
 // vlCreateImage()
 // Create an image to work on.
 //
-VTFLIB_API vlBool vlCreateImage(vlUInt *uiImage)
+VTFLIB_API vlBool vlCreateImage(vlUInt *uiImage, VTFLibError* Error)
 {
 	if(!bInitialized)
 	{
-		LastError.Set("VTFLib not initialized.");
+		Error->Set("VTFLib not initialized.");
 		return vlFalse;
 	}
 
@@ -150,37 +150,40 @@ VTFLIB_API vlVoid vlImageCreateDefaultCreateStructure(SVTFCreateOptions *VTFCrea
 	VTFCreateOptions->bSphereMap = vlTrue;
 }
 
-VTFLIB_API vlBool vlImageCreate(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, VTFImageFormat ImageFormat, vlBool bThumbnail, vlBool bMipmaps, vlBool bNullImageData)
+VTFLIB_API vlBool vlImageCreate(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, VTFImageFormat ImageFormat, vlBool bThumbnail, vlBool bMipmaps, vlBool bNullImageData, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
-	return Image->Create(uiWidth, uiHeight, uiFrames, uiFaces, uiSlices, ImageFormat, bThumbnail, bMipmaps, bNullImageData);
+	return Image->Create(uiWidth, uiHeight, *Error, uiFrames, uiFaces, uiSlices, ImageFormat, bThumbnail, bMipmaps, bNullImageData);
 }
 
-VTFLIB_API vlBool vlImageCreateSingle(vlUInt uiWidth, vlUInt uiHeight, vlByte *lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions)
+VTFLIB_API vlBool vlImageCreateSingle(vlUInt uiWidth, vlUInt uiHeight, vlByte *lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
-	return Image->Create(uiWidth, uiHeight, lpImageDataRGBA8888, *VTFCreateOptions);
+	return Image->Create(uiWidth, uiHeight, lpImageDataRGBA8888, *VTFCreateOptions, *Error);
 }
 
-VTFLIB_API vlBool vlImageCreateMultiple(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, vlByte **lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions)
+VTFLIB_API vlBool vlImageCreateMultiple(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, vlByte **lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		if (Error != 0)
+		{
+			Error->Set("No image bound.");
+		}
 		return vlFalse;
 	}
 
-	return Image->Create(uiWidth, uiHeight, uiFrames, uiFaces, uiSlices, lpImageDataRGBA8888, *VTFCreateOptions);
+	return Image->Create(uiWidth, uiHeight, uiFrames, uiFaces, uiSlices, lpImageDataRGBA8888, *VTFCreateOptions, *Error);
 }
 
 VTFLIB_API vlVoid vlImageDestroy()
@@ -191,81 +194,94 @@ VTFLIB_API vlVoid vlImageDestroy()
 	Image->Destroy();
 }
 
-VTFLIB_API vlBool vlImageIsLoaded()
+VTFLIB_API vlBool vlImageIsLoaded(VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
 	return Image->IsLoaded();
 }
 
-VTFLIB_API vlBool vlImageLoad(const vlChar *cFileName, vlBool bHeaderOnly)
+VTFLIB_API vlBool vlImageLoad(const vlChar *cFileName, vlBool bHeaderOnly, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
-	return Image->Load(cFileName, bHeaderOnly);
+	if (Error == 0)
+	{
+		VTFLibError Error;
+
+		return Image->Load(cFileName, Error, bHeaderOnly);
+	}
+
+	return Image->Load(cFileName, *Error, bHeaderOnly);
 }
 
-VTFLIB_API vlBool vlImageLoadLump(const vlVoid *lpData, vlSize uiBufferSize, vlBool bHeaderOnly)
+VTFLIB_API vlBool vlImageLoadLump(const vlVoid *lpData, vlSize uiBufferSize, vlBool bHeaderOnly, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
-	return Image->Load(lpData, uiBufferSize, bHeaderOnly);
+	if (Error == 0)
+	{
+		VTFLibError Error;
+		return Image->Load(lpData, uiBufferSize, Error, bHeaderOnly);
+	}
+
+	return Image->Load(lpData, uiBufferSize, *Error, bHeaderOnly);
 }
 
-VTFLIB_API vlBool vlImageLoadProc(vlVoid *pUserData, vlBool bHeaderOnly)
+VTFLIB_API vlBool vlImageLoadProc(vlVoid *pUserData, vlBool bHeaderOnly, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
-	return Image->Load(pUserData, bHeaderOnly);
+	return Image->Load(pUserData, bHeaderOnly, *Error);
 }
 
-VTFLIB_API vlBool vlImageSave(const vlChar *cFileName)
+VTFLIB_API vlBool vlImageSave(const vlChar *cFileName, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
-	return Image->Save(cFileName);
+	return Image->Save(cFileName, *Error);
 }
 
-VTFLIB_API vlBool vlImageSaveLump(vlVoid *lpData, vlSize uiBufferSize, vlSize *uiSize)
+VTFLIB_API vlBool vlImageSaveLump(vlVoid *lpData, vlSize uiBufferSize, vlSize *uiSize, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
-	return Image->Save(lpData, uiBufferSize, *uiSize);
+	return Image->Save(lpData, uiBufferSize, *uiSize, *Error);
 }
 
-VTFLIB_API vlBool vlImageSaveProc(vlVoid *pUserData)
+VTFLIB_API vlBool vlImageSaveProc(vlVoid *pUserData, VTFLibError* Error)
 {
 	if(Image == 0)
 	{
-		LastError.Set("No image bound.");
+		Error->Set("No image bound.");
 		return vlFalse;
 	}
 
-	return Image->Save(pUserData);
+	return Image->Save(pUserData, *Error);
 }
 
 VTFLIB_API vlUInt vlImageGetMajorVersion()
@@ -532,76 +548,76 @@ VTFLIB_API vlBool vlImageGetHasResource(vlUInt uiType)
 	return Image->GetHasResource(uiType);
 }
 
-VTFLIB_API vlVoid *vlImageGetResourceData(vlUInt uiType, vlUInt *uiSize)
+VTFLIB_API vlVoid *vlImageGetResourceData(vlUInt uiType, vlUInt *uiSize, VTFLibError* Error)
 {
 	if(Image == 0)
 		return 0;
 
-	return Image->GetResourceData(uiType, *uiSize);
+	return Image->GetResourceData(uiType, *uiSize, *Error);
 }
 
-VTFLIB_API vlVoid *vlImageSetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData)
+VTFLIB_API vlVoid *vlImageSetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData, VTFLibError* Error)
 {
 	if(Image == 0)
 		return 0;
 
-	return Image->SetResourceData(uiType, uiSize, lpData);
+	return Image->SetResourceData(uiType, uiSize, lpData, *Error);
 }
 
-VTFLIB_API vlBool vlImageGenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter)
+VTFLIB_API vlBool vlImageGenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error)
 {
 	if(Image == 0)
 		return vlFalse;
 
-	return Image->GenerateMipmaps(uiFace, uiFrame, MipmapFilter, SharpenFilter);
+	return Image->GenerateMipmaps(uiFace, uiFrame, *Error, MipmapFilter, SharpenFilter);
 }
 
-VTFLIB_API vlBool vlImageGenerateAllMipmaps(VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter)
+VTFLIB_API vlBool vlImageGenerateAllMipmaps(VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error)
 {
 	if(Image == 0)
 		return vlFalse;
 
-	return Image->GenerateMipmaps(MipmapFilter, SharpenFilter);
+	return Image->GenerateMipmaps(MipmapFilter, SharpenFilter, *Error);
 }
 
-VTFLIB_API vlBool vlImageGenerateThumbnail()
+VTFLIB_API vlBool vlImageGenerateThumbnail(VTFLibError* Error)
 {
 	if(Image == 0)
 		return vlFalse;
 
-	return Image->GenerateThumbnail();
+	return Image->GenerateThumbnail(*Error);
 }
 
-VTFLIB_API vlBool vlImageGenerateNormalMap(vlUInt uiFrame, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult)
+VTFLIB_API vlBool vlImageGenerateNormalMap(vlUInt uiFrame, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, VTFLibError* Error)
 {
 	if(Image == 0)
 		return vlFalse;
 
-	return Image->GenerateNormalMap(uiFrame, KernelFilter, HeightConversionMethod, NormalAlphaResult);
+	return Image->GenerateNormalMap(uiFrame, *Error, KernelFilter, HeightConversionMethod, NormalAlphaResult);
 }
 
-VTFLIB_API vlBool vlImageGenerateAllNormalMaps(VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult)
+VTFLIB_API vlBool vlImageGenerateAllNormalMaps(VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, VTFLibError* Error)
 {
 	if(Image == 0)
 		return vlFalse;
 
-	return Image->GenerateNormalMap(KernelFilter, HeightConversionMethod, NormalAlphaResult);
+	return Image->GenerateNormalMap(*Error, KernelFilter, HeightConversionMethod, NormalAlphaResult);
 }
 
-VTFLIB_API vlBool vlImageGenerateSphereMap()
+VTFLIB_API vlBool vlImageGenerateSphereMap(VTFLibError* Error)
 {
 	if(Image == 0)
 		return vlFalse;
 
-	return Image->GenerateSphereMap();
+	return Image->GenerateSphereMap(*Error);
 }
 
-VTFLIB_API vlBool vlImageComputeReflectivity()
+VTFLIB_API vlBool vlImageComputeReflectivity(VTFLibError* Error)
 {
 	if(Image == 0)
 		return vlFalse;
 
-	return Image->ComputeReflectivity();
+	return Image->ComputeReflectivity(*Error);
 }
 
 VTFLIB_API SVTFImageFormatInfo const *vlImageGetImageFormatInfo(VTFImageFormat ImageFormat)
@@ -640,29 +656,29 @@ VTFLIB_API vlUInt vlImageComputeMipmapSize(vlUInt uiWidth, vlUInt uiHeight, vlUI
 	return CVTFFile::ComputeMipmapSize(uiWidth, uiHeight, uiDepth, uiMipmapLevel, ImageFormat);
 }
 
-VTFLIB_API vlBool vlImageConvertToRGBA8888(vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat SourceFormat)
+VTFLIB_API vlBool vlImageConvertToRGBA8888(vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat SourceFormat, VTFLibError* Error)
 {
-	return CVTFFile::ConvertToRGBA8888(lpSource, lpDest, uiWidth, uiHeight, SourceFormat);
+	return CVTFFile::ConvertToRGBA8888(lpSource, lpDest, uiWidth, uiHeight, SourceFormat, *Error);
 }
 
-VTFLIB_API vlBool vlImageConvertFromRGBA8888(vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat DestFormat)
+VTFLIB_API vlBool vlImageConvertFromRGBA8888(vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat DestFormat, VTFLibError* Error)
 {
-	return CVTFFile::ConvertFromRGBA8888(lpSource, lpDest, uiWidth, uiHeight, DestFormat);
+	return CVTFFile::ConvertFromRGBA8888(lpSource, lpDest, uiWidth, uiHeight, DestFormat, *Error);
 }
 
-VTFLIB_API vlBool vlImageConvert(vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat SourceFormat, VTFImageFormat DestFormat)
+VTFLIB_API vlBool vlImageConvert(vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat SourceFormat, VTFImageFormat DestFormat, VTFLibError* Error)
 {
-	return CVTFFile::Convert(lpSource, lpDest, uiWidth, uiHeight, SourceFormat, DestFormat);
+	return CVTFFile::Convert(lpSource, lpDest, uiWidth, uiHeight, SourceFormat, DestFormat, *Error);
 }
 
-VTFLIB_API vlBool vlImageConvertToNormalMap(vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, vlUInt uiWidth, vlUInt uiHeight, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, vlByte bMinimumZ, vlSingle sScale, vlBool bWrap, vlBool bInvertX, vlBool bInvertY)
+VTFLIB_API vlBool vlImageConvertToNormalMap(vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, vlUInt uiWidth, vlUInt uiHeight, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, vlByte bMinimumZ, vlSingle sScale, vlBool bWrap, vlBool bInvertX, vlBool bInvertY, VTFLibError* Error)
 {
-	return CVTFFile::ConvertToNormalMap(lpSourceRGBA8888, lpDestRGBA8888, uiWidth, uiHeight, KernelFilter, HeightConversionMethod, NormalAlphaResult, bMinimumZ, sScale, bWrap, bInvertX, bInvertY);
+	return CVTFFile::ConvertToNormalMap(lpSourceRGBA8888, lpDestRGBA8888, uiWidth, uiHeight, *Error, KernelFilter, HeightConversionMethod, NormalAlphaResult, bMinimumZ, sScale, bWrap, bInvertX, bInvertY);
 }
 
-VTFLIB_API vlBool vlImageResize(vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, vlUInt uiSourceWidth, vlUInt uiSourceHeight, vlUInt uiDestWidth, vlUInt uiDestHeight, VTFMipmapFilter ResizeFilter, VTFSharpenFilter SharpenFilter)
+VTFLIB_API vlBool vlImageResize(vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, vlUInt uiSourceWidth, vlUInt uiSourceHeight, vlUInt uiDestWidth, vlUInt uiDestHeight, VTFMipmapFilter ResizeFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error)
 {
-	return CVTFFile::Resize(lpSourceRGBA8888, lpDestRGBA8888, uiSourceWidth, uiSourceHeight, uiDestWidth, uiDestHeight, ResizeFilter, SharpenFilter);
+	return CVTFFile::Resize(lpSourceRGBA8888, lpDestRGBA8888, uiSourceWidth, uiSourceHeight, uiDestWidth, uiDestHeight, *Error, ResizeFilter, SharpenFilter);
 }
 
 VTFLIB_API vlVoid vlImageCorrectImageGamma(vlByte *lpImageDataRGBA8888, vlUInt uiWidth, vlUInt uiHeight, vlSingle sGammaCorrection)

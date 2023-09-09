@@ -15,7 +15,7 @@
 using namespace VTFLib;
 using namespace VTFLib::IO::Readers;
 
-vlBool CFileReader::Open()
+vlBool CFileReader::Open(VTFLibError& Error)
 {
 	this->Close();
 
@@ -25,7 +25,7 @@ vlBool CFileReader::Open()
 	{
 		this->hFile = NULL;
 
-		LastError.Set("Error opening file.", vlTrue);
+		Error.Set("Error opening file.", vlTrue);
 
 		return vlFalse;
 	}
@@ -42,7 +42,7 @@ vlVoid CFileReader::Close()
 	}
 }
 
-vlSSize CFileReader::GetStreamSize() const
+vlSSize CFileReader::GetStreamSize(VTFLibError& Error) const
 {
 	if(this->hFile == NULL)
 	{
@@ -52,7 +52,7 @@ vlSSize CFileReader::GetStreamSize() const
 	return GetFileSize(this->hFile, NULL);
 }
 
-vlSSize CFileReader::GetStreamPointer() const
+vlSSize CFileReader::GetStreamPointer(VTFLibError& Error) const
 {
 	if(this->hFile == NULL)
 	{
@@ -62,7 +62,7 @@ vlSSize CFileReader::GetStreamPointer() const
 	return (vlSSize)SetFilePointer(this->hFile, 0, NULL, FILE_CURRENT);
 }
 
-vlSSize CFileReader::Seek(vlOffset lOffset, VLSeekMode uiMode)
+vlSSize CFileReader::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -72,7 +72,7 @@ vlSSize CFileReader::Seek(vlOffset lOffset, VLSeekMode uiMode)
 	return (vlSSize)SetFilePointer(this->hFile, lOffset, NULL, (vlUInt)uiMode);
 }
 
-vlBool CFileReader::Read(vlChar &cChar)
+vlBool CFileReader::Read(vlChar &cChar, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -83,13 +83,13 @@ vlBool CFileReader::Read(vlChar &cChar)
 
 	if(!ReadFile(this->hFile, &cChar, 1, &ulBytesRead, NULL))
 	{
-		LastError.Set("ReadFile() failed.", vlTrue);
+		Error.Set("ReadFile() failed.", vlTrue);
 	}
 
 	return ulBytesRead == 1;
 }
 
-vlSize CFileReader::Read(vlVoid *vData, vlSize uiBytes)
+vlSize CFileReader::Read(vlVoid *vData, vlSize uiBytes, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -100,7 +100,7 @@ vlSize CFileReader::Read(vlVoid *vData, vlSize uiBytes)
 
 	if(!ReadFile(this->hFile, vData, uiBytes, &ulBytesRead, NULL))
 	{
-		LastError.Set("ReadFile() failed.", vlTrue);
+		Error.Set("ReadFile() failed.", vlTrue);
 	}
 
 	return (vlSize)ulBytesRead;

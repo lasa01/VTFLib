@@ -239,7 +239,7 @@ CVTFFile::CVTFFile(const CVTFFile &VTFFile)
 // CVTFFile()
 // Copy constructor.  Converts VTFFile to ImageFormat.
 //
-CVTFFile::CVTFFile(const CVTFFile &VTFFile, VTFImageFormat ImageFormat)
+CVTFFile::CVTFFile(const CVTFFile &VTFFile, VTFImageFormat ImageFormat, VTFLibError& Error)
 {
 	this->Header = 0;
 
@@ -314,7 +314,7 @@ CVTFFile::CVTFFile(const CVTFFile &VTFFile, VTFImageFormat ImageFormat)
 
 							//this->ConvertToRGBA8888(VTFFile.GetData(i, j, k, l), lpImageData, uiMipmapWidth, uiMipmapHeight, VTFFile.GetFormat());
 							//this->ConvertFromRGBA8888(lpImageData, this->GetData(i, j, k, l), uiMipmapWidth, uiMipmapHeight, this->GetFormat());
-							this->Convert(VTFFile.GetData(i, j, k, l), this->GetData(i, j, k, l), uiMipmapWidth, uiMipmapHeight, VTFFile.GetFormat(), this->GetFormat());
+							this->Convert(VTFFile.GetData(i, j, k, l), this->GetData(i, j, k, l), uiMipmapWidth, uiMipmapHeight, VTFFile.GetFormat(), this->GetFormat(), Error);
 						}
 					}
 				}
@@ -346,7 +346,7 @@ CVTFFile::~CVTFFile()
 // options must be set after creation.  Essential format flags are automatically
 // generated.
 //
-vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, VTFImageFormat ImageFormat, vlBool bThumbnail, vlBool bMipmaps, vlBool bNullImageData)
+vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, VTFLibError& Error, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, VTFImageFormat ImageFormat, vlBool bThumbnail, vlBool bMipmaps, vlBool bNullImageData)
 {
 	this->Destroy();
 
@@ -359,12 +359,12 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 	{
 		if(uiWidth == 0)
 		{
-			LastError.Set("Invalid image width.  Width must be nonzero.");
+			Error.Set("Invalid image width.  Width must be nonzero.");
 		}
 		else
 		{
 			vlUInt uiNextPowerOfTwo = this->NextPowerOfTwo(uiWidth);
-			LastError.SetFormatted("Invalid image width %u.  Width must be a power of two (nearest powers are %u and %u).", uiWidth, uiNextPowerOfTwo >> 1, uiNextPowerOfTwo);
+			Error.SetFormatted("Invalid image width %u.  Width must be a power of two (nearest powers are %u and %u).", uiWidth, uiNextPowerOfTwo >> 1, uiNextPowerOfTwo);
 		}
 		return vlFalse;
 	}
@@ -374,12 +374,12 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 	{
 		if(uiHeight == 0)
 		{
-			LastError.Set("Invalid image height.  Height must be nonzero.");
+			Error.Set("Invalid image height.  Height must be nonzero.");
 		}
 		else
 		{
 			vlUInt uiNextPowerOfTwo = this->NextPowerOfTwo(uiHeight);
-			LastError.SetFormatted("Invalid image height %u.  Height must be a power of two (nearest powers are %u and %u).", uiHeight, uiNextPowerOfTwo >> 1, uiNextPowerOfTwo);
+			Error.SetFormatted("Invalid image height %u.  Height must be a power of two (nearest powers are %u and %u).", uiHeight, uiNextPowerOfTwo >> 1, uiNextPowerOfTwo);
 		}
 		return vlFalse;
 	}
@@ -389,43 +389,43 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 	{
 		if(uiHeight == 0)
 		{
-			LastError.Set("Invalid image depth.  Depth must be nonzero.");
+			Error.Set("Invalid image depth.  Depth must be nonzero.");
 		}
 		else
 		{
 			vlUInt uiNextPowerOfTwo = this->NextPowerOfTwo(uiSlices);
-			LastError.SetFormatted("Invalid image depth %u.  Depth must be a power of two (nearest powers are %u and %u).", uiSlices, uiNextPowerOfTwo >> 1, uiNextPowerOfTwo);
+			Error.SetFormatted("Invalid image depth %u.  Depth must be a power of two (nearest powers are %u and %u).", uiSlices, uiNextPowerOfTwo >> 1, uiNextPowerOfTwo);
 		}
 		return vlFalse;
 	}
 
 	if(ImageFormat <= IMAGE_FORMAT_NONE || ImageFormat >= IMAGE_FORMAT_COUNT)
 	{
-		LastError.Set("Invalid image format.");
+		Error.Set("Invalid image format.");
 		return vlFalse;
 	}
 
 	if(!this->GetImageFormatInfo(ImageFormat).bIsSupported)
 	{
-		LastError.Set("Image format not supported.");
+		Error.Set("Image format not supported.");
 		return vlFalse;
 	}
 
 	if(uiFrames < 1 || uiFrames > 0xffff)
 	{
-		LastError.SetFormatted("Invalid image frame count %u.", uiFrames);
+		Error.SetFormatted("Invalid image frame count %u.", uiFrames);
 		return vlFalse;
 	}
 
 	if(uiFaces != 1 && uiFaces != 6 && uiFaces != 7)
 	{
-		LastError.SetFormatted("Invalid image face count %u.", uiFaces);
+		Error.SetFormatted("Invalid image face count %u.", uiFaces);
 		return vlFalse;
 	}
 
 	if(uiFaces != 1 && uiFaces != 6 && VTF_MINOR_VERSION_DEFAULT >= VTF_MINOR_VERSION_MIN_NO_SPHERE_MAP)
 	{
-		LastError.SetFormatted("Invalid image face count %u for version %d.%d.", uiFaces, VTF_MAJOR_VERSION, VTF_MINOR_VERSION_DEFAULT);
+		Error.SetFormatted("Invalid image face count %u for version %d.%d.", uiFaces, VTF_MAJOR_VERSION, VTF_MINOR_VERSION_DEFAULT);
 		return vlFalse;
 	}
 
@@ -550,9 +550,9 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 // Can also generate mipmaps and a thumbnail.  Recommended function for high level single
 // face/frame VTF file creation.
 //
-vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlByte *lpImageDataRGBA8888, const SVTFCreateOptions &VTFCreateOptions)
+vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlByte *lpImageDataRGBA8888, const SVTFCreateOptions &VTFCreateOptions, VTFLibError& Error)
 {
-	return this->Create(uiWidth, uiHeight, 1, 1, 1, &lpImageDataRGBA8888, VTFCreateOptions);
+	return this->Create(uiWidth, uiHeight, 1, 1, 1, &lpImageDataRGBA8888, VTFCreateOptions, Error);
 }
 
 //
@@ -561,7 +561,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlByte *lpImageDataRGBA
 // Can also generate mipmaps and a thumbnail.  Recommended function for high level multiple
 // face/frame VTF file creation.
 //
-vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, vlByte **lpImageDataRGBA8888, const SVTFCreateOptions &VTFCreateOptions)
+vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, vlByte **lpImageDataRGBA8888, const SVTFCreateOptions &VTFCreateOptions, VTFLibError& Error)
 {
 	vlUInt uiCount = 0;
 	if(uiFrames > uiCount)
@@ -574,31 +574,31 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 
 	if((uiFrames == 1 && uiFaces > 1 && uiSlices > 1) || (uiFrames > 1 && uiFaces == 1 && uiSlices > 1) || (uiFrames > 1 && uiFaces > 1 && uiSlices == 1))
 	{
-		LastError.Set("Invalid image frame, face and slice count combination.  Function does not support images with any combination of multiple frames or faces or slices.");
+		Error.Set("Invalid image frame, face and slice count combination.  Function does not support images with any combination of multiple frames or faces or slices.");
 		return vlFalse;
 	}
 
 	if(VTFCreateOptions.uiVersion[0] != VTF_MAJOR_VERSION || VTFCreateOptions.uiVersion[1] > VTF_MINOR_VERSION)
 	{
-		LastError.SetFormatted("File version %u.%u does not match %d.%d to %d.%d.", VTFCreateOptions.uiVersion[0], VTFCreateOptions.uiVersion[1], VTF_MAJOR_VERSION, 0, VTF_MAJOR_VERSION, VTF_MINOR_VERSION);
+		Error.SetFormatted("File version %u.%u does not match %d.%d to %d.%d.", VTFCreateOptions.uiVersion[0], VTFCreateOptions.uiVersion[1], VTF_MAJOR_VERSION, 0, VTF_MAJOR_VERSION, VTF_MINOR_VERSION);
 		return vlFalse;
 	}
 
 	if(VTFCreateOptions.uiVersion[0] == VTF_MAJOR_VERSION && VTFCreateOptions.uiVersion[1] < VTF_MINOR_VERSION_MIN_VOLUME && uiSlices > 1)
 	{
-		LastError.SetFormatted("Volume textures are only supported in version %d.%d and up.", VTF_MAJOR_VERSION, VTF_MINOR_VERSION_MIN_VOLUME);
+		Error.SetFormatted("Volume textures are only supported in version %d.%d and up.", VTF_MAJOR_VERSION, VTF_MINOR_VERSION_MIN_VOLUME);
 		return vlFalse;
 	}
 
 	if(VTFCreateOptions.uiVersion[0] == VTF_MAJOR_VERSION && VTFCreateOptions.uiVersion[1] < VTF_MINOR_VERSION_MIN_SPHERE_MAP && uiFaces == 7)
 	{
-		LastError.SetFormatted("Sphere maps are only supported in version %d.%d and up.", VTF_MAJOR_VERSION, VTF_MINOR_VERSION_MIN_SPHERE_MAP);
+		Error.SetFormatted("Sphere maps are only supported in version %d.%d and up.", VTF_MAJOR_VERSION, VTF_MINOR_VERSION_MIN_SPHERE_MAP);
 		return vlFalse;
 	}
 
 	if(VTFCreateOptions.bMipmaps && uiSlices > 1)
 	{
-		LastError.Set("Mipmap generation for depth textures is not supported.");
+		Error.Set("Mipmap generation for depth textures is not supported.");
 		return vlFalse;
 	}
 
@@ -702,7 +702,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 				{
 					lpNewImageDataRGBA8888[i] = new vlByte[this->ComputeImageSize(uiNewWidth, uiNewHeight, 1, IMAGE_FORMAT_RGBA8888)];
 
-					if(!this->Resize(lpImageDataRGBA8888[i], lpNewImageDataRGBA8888[i], uiWidth, uiHeight, uiNewWidth, uiNewHeight, VTFCreateOptions.ResizeFilter, VTFCreateOptions.ResizeSharpenFilter))
+					if(!this->Resize(lpImageDataRGBA8888[i], lpNewImageDataRGBA8888[i], uiWidth, uiHeight, uiNewWidth, uiNewHeight, Error, VTFCreateOptions.ResizeFilter, VTFCreateOptions.ResizeSharpenFilter))
 					{
 						throw 0;
 					}
@@ -716,7 +716,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 		}
 
 		// Create image (allocate and setup structures).
-		if(!this->Create(uiWidth, uiHeight, uiFrames, uiFaces + (VTFCreateOptions.bSphereMap && uiFaces == 6 ? 1 : 0), uiSlices, VTFCreateOptions.ImageFormat, VTFCreateOptions.bThumbnail, VTFCreateOptions.bMipmaps, vlFalse))
+		if(!this->Create(uiWidth, uiHeight, Error, uiFrames, uiFaces + (VTFCreateOptions.bSphereMap && uiFaces == 6 ? 1 : 0), uiSlices, VTFCreateOptions.ImageFormat, VTFCreateOptions.bThumbnail, VTFCreateOptions.bMipmaps, vlFalse))
 		{
 			throw 0;
 		}
@@ -768,7 +768,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 				{
 					for(vlUInt k = 0; k < uiSlices; k++)
 					{
-						if(!this->ConvertToNormalMap(lpImageDataRGBA8888[i + j + k], 0/*lpImageDataNormalMap*/, this->Header->Width, this->Header->Height, VTFCreateOptions.KernelFilter, VTFCreateOptions.HeightConversionMethod, VTFCreateOptions.NormalAlphaResult, VTFCreateOptions.bNormalMinimumZ, VTFCreateOptions.sNormalScale, VTFCreateOptions.bNormalWrap, VTFCreateOptions.bNormalInvertX, VTFCreateOptions.bNormalInvertY, VTFCreateOptions.bNormalInvertZ))
+						if(!this->ConvertToNormalMap(lpImageDataRGBA8888[i + j + k], 0/*lpImageDataNormalMap*/, this->Header->Width, this->Header->Height, Error, VTFCreateOptions.KernelFilter, VTFCreateOptions.HeightConversionMethod, VTFCreateOptions.NormalAlphaResult, VTFCreateOptions.bNormalMinimumZ, VTFCreateOptions.sNormalScale, VTFCreateOptions.bNormalWrap, VTFCreateOptions.bNormalInvertX, VTFCreateOptions.bNormalInvertY, VTFCreateOptions.bNormalInvertZ))
 						{
 							//delete []lpImageDataNormalMap;
 
@@ -910,7 +910,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 				}
 			}
 #else
-			LastError.Set("NVDXT support required for CVTFFile::GenerateMipmaps().");
+			Error.Set("NVDXT support required for CVTFFile::GenerateMipmaps().");
 			throw 0;
 #endif
 		}
@@ -922,7 +922,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 				{
 					for(vlUInt k = 0; k < uiSlices; k++)
 					{
-						if(!this->ConvertFromRGBA8888(lpImageDataRGBA8888[i + j + k], this->GetData(i, j, k, 0), this->Header->Width, this->Header->Height, this->Header->ImageFormat))
+						if(!this->ConvertFromRGBA8888(lpImageDataRGBA8888[i + j + k], this->GetData(i, j, k, 0), this->Header->Width, this->Header->Height, this->Header->ImageFormat, Error))
 						{
 							throw 0;
 						}
@@ -934,7 +934,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 		// Generate thumbnail off mipmaps.
 		if(VTFCreateOptions.bThumbnail)
 		{
-			if(!this->GenerateThumbnail())
+			if(!this->GenerateThumbnail(Error))
 			{
 				throw 0;
 			}
@@ -942,7 +942,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 
 		if(VTFCreateOptions.bSphereMap && uiFaces == 6)
 		{
-			if(!this->GenerateSphereMap())
+			if(!this->GenerateSphereMap(Error))
 			{
 				throw 0;
 			}
@@ -1075,47 +1075,47 @@ vlBool CVTFFile::IsLoaded() const
 	return this->Header != 0;
 }
 
-vlBool CVTFFile::Load(const vlChar *cFileName, vlBool bHeaderOnly)
+vlBool CVTFFile::Load(const vlChar *cFileName, VTFLibError& Error, vlBool bHeaderOnly)
 {
 	IO::Readers::CFileReader reader(cFileName);
-	return this->Load(&reader, bHeaderOnly);
+	return this->Load(&reader, bHeaderOnly, Error);
 }
 
-vlBool CVTFFile::Load(const vlVoid *lpData, vlSize uiBufferSize, vlBool bHeaderOnly)
+vlBool CVTFFile::Load(const vlVoid *lpData, vlSize uiBufferSize, VTFLibError& Error, vlBool bHeaderOnly)
 {
 	IO::Readers::CMemoryReader reader(lpData, uiBufferSize);
-	return this->Load(&reader, bHeaderOnly);
+	return this->Load(&reader, bHeaderOnly, Error);
 }
 
-vlBool CVTFFile::Load(vlVoid *pUserData, vlBool bHeaderOnly)
+vlBool CVTFFile::Load(vlVoid *pUserData, VTFLibError& Error, vlBool bHeaderOnly)
 {
 	IO::Readers::CProcReader reader(pUserData);
-	return this->Load(&reader, bHeaderOnly);
+	return this->Load(&reader, bHeaderOnly, Error);
 }
 
-vlBool CVTFFile::Save(const vlChar *cFileName) const
+vlBool CVTFFile::Save(const vlChar *cFileName, VTFLibError& Error) const
 {
 	IO::Writers::CFileWriter writer(cFileName);
-	return this->Save(&writer);
+	return this->Save(&writer, Error);
 }
 
-vlBool CVTFFile::Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize) const
+vlBool CVTFFile::Save(vlVoid* lpData, vlSize uiBufferSize, vlSize& uiSize, VTFLibError& Error) const
 {
 	uiSize = 0;
 
 	IO::Writers::CMemoryWriter MemoryWriter = IO::Writers::CMemoryWriter(lpData, uiBufferSize);
 
-	vlBool bResult = this->Save(&MemoryWriter);
+	vlBool bResult = this->Save(&MemoryWriter, Error);
 
-	uiSize = MemoryWriter.GetStreamSize();
+	uiSize = MemoryWriter.GetStreamSize(Error);
 
 	return bResult;
 }
 
-vlBool CVTFFile::Save(vlVoid *pUserData) const
+vlBool CVTFFile::Save(vlVoid *pUserData, VTFLibError& Error) const
 {
 	IO::Writers::CProcWriter writer(pUserData);
-	return this->Save(&writer);
+	return this->Save(&writer, Error);
 }
 
 // -----------------------------------------------------------------------------------
@@ -1125,22 +1125,22 @@ vlBool CVTFFile::Save(vlVoid *pUserData) const
 // Reader - The stream to read from.
 // bHeaderOnly - only read in the header if true (dont allocate and read image data in)
 // ------------------------------------------------------------------------------------
-vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
+vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly, VTFLibError& Error)
 {
 	this->Destroy();
 
 	try
 	{
-		if(!Reader->Open())
+		if(!Reader->Open(Error))
 			throw 0;
 
 		// Get the size of the .vtf file.
-		vlSize uiFileSize = Reader->GetStreamSize();
+		vlSize uiFileSize = Reader->GetStreamSize(Error);
 
 		// Check we at least have enough bytes for a header.
 		if(uiFileSize < sizeof(SVTFFileHeader))
 		{
-			LastError.Set("File is corrupt; file to small for it's header.");
+			Error.Set("File is corrupt; file to small for it's header.");
 			throw 0;
 		}
 
@@ -1148,36 +1148,36 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 
 		// read the file header
 		memset(&FileHeader, 0, sizeof(SVTFFileHeader));
-		if(Reader->Read(&FileHeader, sizeof(SVTFFileHeader)) != sizeof(SVTFFileHeader))
+		if(Reader->Read(&FileHeader, sizeof(SVTFFileHeader), Error) != sizeof(SVTFFileHeader))
 		{
 			throw 0;
 		}
 
 		if(memcmp(FileHeader.TypeString, "VTF\0", 4) != 0)
 		{
-			LastError.Set("File signature does not match 'VTF'.");
+			Error.Set("File signature does not match 'VTF'.");
 			throw 0;
 		}
 
 		if(FileHeader.Version[0] != VTF_MAJOR_VERSION || FileHeader.Version[1] > VTF_MINOR_VERSION)
 		{
-			LastError.SetFormatted("File version %u.%u does not match %d.%d to %d.%d.", FileHeader.Version[0], FileHeader.Version[1], VTF_MAJOR_VERSION, 0, VTF_MAJOR_VERSION, VTF_MINOR_VERSION);
+			Error.SetFormatted("File version %u.%u does not match %d.%d to %d.%d.", FileHeader.Version[0], FileHeader.Version[1], VTF_MAJOR_VERSION, 0, VTF_MAJOR_VERSION, VTF_MINOR_VERSION);
 			throw 0;
 		}
 
 		if(FileHeader.HeaderSize > sizeof(SVTFHeader))
 		{
-			LastError.SetFormatted("File header size %u B is larger than the %u B maximum expected.", FileHeader.HeaderSize, (vlUInt)sizeof(SVTFHeader));
+			Error.SetFormatted("File header size %u B is larger than the %u B maximum expected.", FileHeader.HeaderSize, (vlUInt)sizeof(SVTFHeader));
 			throw 0;
 		}
 
-		Reader->Seek(0, SEEK_MODE_BEGIN);
+		Reader->Seek(0, SEEK_MODE_BEGIN, Error);
 
 		this->Header = new SVTFHeader;
 		memset(this->Header, 0, sizeof(SVTFHeader));
 
 		// read the header
-		if(Reader->Read(this->Header, FileHeader.HeaderSize) != FileHeader.HeaderSize)
+		if(Reader->Read(this->Header, FileHeader.HeaderSize, Error) != FileHeader.HeaderSize)
 		{
 			throw 0;
 		}
@@ -1219,7 +1219,7 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 		{
 			if(this->Header->ResourceCount > VTF_RSRC_MAX_DICTIONARY_ENTRIES)
 			{
-				LastError.SetFormatted("File may be corrupt; directory length %u exceeds maximum dictionary length of %u.", this->Header->ResourceCount, VTF_RSRC_MAX_DICTIONARY_ENTRIES);
+				Error.SetFormatted("File may be corrupt; directory length %u exceeds maximum dictionary length of %u.", this->Header->ResourceCount, VTF_RSRC_MAX_DICTIONARY_ENTRIES);
 				throw 0;
 			}
 
@@ -1230,12 +1230,12 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 				case VTF_LEGACY_RSRC_LOW_RES_IMAGE:
 					if(this->Header->LowResImageFormat == IMAGE_FORMAT_NONE)
 					{
-						LastError.Set("File may be corrupt; unexpected low resolution image directory entry.");
+						Error.Set("File may be corrupt; unexpected low resolution image directory entry.");
 						throw 0;
 					}
 					if(uiThumbnailBufferOffset != 0)
 					{
-						LastError.Set("File may be corrupt; multiple low resolution image directory entries.");
+						Error.Set("File may be corrupt; multiple low resolution image directory entries.");
 						throw 0;
 					}
 					uiThumbnailBufferOffset = this->Header->Resources[i].Data;
@@ -1243,7 +1243,7 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 				case VTF_LEGACY_RSRC_IMAGE:
 					if(uiImageDataOffset != 0)
 					{
-						LastError.Set("File may be corrupt; multiple image directory entries.");
+						Error.Set("File may be corrupt; multiple image directory entries.");
 						throw 0;
 					}
 					uiImageDataOffset = this->Header->Resources[i].Data;
@@ -1253,26 +1253,26 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 					{
 						if(this->Header->Resources[i].Data + sizeof(vlUInt) > uiFileSize)
 						{
-							LastError.Set("File may be corrupt; file to small for it's resource data.");
+							Error.Set("File may be corrupt; file to small for it's resource data.");
 							throw 0;
 						}
 
 						vlUInt uiSize = 0;
-						Reader->Seek(this->Header->Resources[i].Data, SEEK_MODE_BEGIN);
-						if(Reader->Read(&uiSize, sizeof(vlUInt)) != sizeof(vlUInt))
+						Reader->Seek(this->Header->Resources[i].Data, SEEK_MODE_BEGIN, Error);
+						if(Reader->Read(&uiSize, sizeof(vlUInt), Error) != sizeof(vlUInt))
 						{
 							throw 0;
 						}
 
 						if(this->Header->Resources[i].Data + sizeof(vlUInt) + uiSize > uiFileSize)
 						{
-							LastError.Set("File may be corrupt; file to small for it's resource data.");
+							Error.Set("File may be corrupt; file to small for it's resource data.");
 							throw 0;
 						}
 
 						this->Header->Data[i].Size = uiSize;
 						this->Header->Data[i].Data = new vlByte[uiSize];
-						if(Reader->Read(this->Header->Data[i].Data, uiSize) != uiSize)
+						if(Reader->Read(this->Header->Data[i].Data, uiSize, Error) != uiSize)
 						{
 							throw 0;
 						}
@@ -1291,7 +1291,7 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 		// headersize + lowbuffersize + buffersize *should* equal the filesize
 		if(this->Header->HeaderSize > uiFileSize || uiThumbnailBufferOffset + this->uiThumbnailBufferSize > uiFileSize || uiImageDataOffset + this->uiImageBufferSize > uiFileSize)
 		{
-			LastError.Set("File may be corrupt; file to small for it's image data.");
+			Error.Set("File may be corrupt; file to small for it's image data.");
 			throw 0;
 		}
 
@@ -1306,8 +1306,8 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 			this->lpThumbnailImageData = new vlByte[this->uiThumbnailBufferSize];
 
 			// load the low res data
-			Reader->Seek(uiThumbnailBufferOffset, SEEK_MODE_BEGIN);
-			if(Reader->Read(this->lpThumbnailImageData, this->uiThumbnailBufferSize) != this->uiThumbnailBufferSize)
+			Reader->Seek(uiThumbnailBufferOffset, SEEK_MODE_BEGIN, Error);
+			if(Reader->Read(this->lpThumbnailImageData, this->uiThumbnailBufferSize, Error) != this->uiThumbnailBufferSize)
 			{
 				throw 0;
 			}
@@ -1323,8 +1323,8 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 			this->lpImageData = new vlByte[this->uiImageBufferSize];
 
 			// load the high-res data
-			Reader->Seek(uiImageDataOffset, SEEK_MODE_BEGIN);
-			if(Reader->Read(this->lpImageData, this->uiImageBufferSize) != this->uiImageBufferSize)
+			Reader->Seek(uiImageDataOffset, SEEK_MODE_BEGIN, Error);
+			if(Reader->Read(this->lpImageData, this->uiImageBufferSize, Error) != this->uiImageBufferSize)
 			{
 				throw 0;
 			}
@@ -1351,11 +1351,11 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly)
 // Save()
 // Saves the curret image.  Basic format checking is done.
 //
-vlBool CVTFFile::Save(IO::Writers::IWriter *Writer) const
+vlBool CVTFFile::Save(IO::Writers::IWriter *Writer, VTFLibError& Error) const
 {
 	if(!this->IsLoaded() || !this->GetHasImage())
 	{
-		LastError.Set("No image to save.");
+		Error.Set("No image to save.");
 		return vlFalse;
 	}
 
@@ -1364,11 +1364,11 @@ vlBool CVTFFile::Save(IO::Writers::IWriter *Writer) const
 
 	try
 	{
-		if(!Writer->Open())
+		if(!Writer->Open(Error))
 			throw 0;
 
 		// Write the header.
-		if(Writer->Write(this->Header, this->Header->HeaderSize) != this->Header->HeaderSize)
+		if(Writer->Write(this->Header, this->Header->HeaderSize, Error) != this->Header->HeaderSize)
 		{
 			throw 0;
 		}
@@ -1380,13 +1380,13 @@ vlBool CVTFFile::Save(IO::Writers::IWriter *Writer) const
 				switch(this->Header->Resources[i].Type)
 				{
 				case VTF_LEGACY_RSRC_LOW_RES_IMAGE:
-					if(Writer->Write(this->lpThumbnailImageData, this->uiThumbnailBufferSize) != this->uiThumbnailBufferSize)
+					if(Writer->Write(this->lpThumbnailImageData, this->uiThumbnailBufferSize, Error) != this->uiThumbnailBufferSize)
 					{
 						throw 0;
 					}
 					break;
 				case VTF_LEGACY_RSRC_IMAGE:
-					if(Writer->Write(this->lpImageData, this->uiImageBufferSize) != this->uiImageBufferSize)
+					if(Writer->Write(this->lpImageData, this->uiImageBufferSize, Error) != this->uiImageBufferSize)
 					{
 						throw 0;
 					}
@@ -1394,12 +1394,12 @@ vlBool CVTFFile::Save(IO::Writers::IWriter *Writer) const
 				default:
 					if((this->Header->Resources[i].S.Flags & RSRCF_HAS_NO_DATA_CHUNK) == 0)
 					{
-						if(Writer->Write(&this->Header->Data[i].Size, sizeof(vlUInt)) != sizeof(vlUInt))
+						if(Writer->Write(&this->Header->Data[i].Size, sizeof(vlUInt), Error) != sizeof(vlUInt))
 						{
 							throw 0;
 						}
 
-						if(Writer->Write(this->Header->Data[i].Data, this->Header->Data[i].Size) != this->Header->Data[i].Size)
+						if(Writer->Write(this->Header->Data[i].Data, this->Header->Data[i].Size, Error) != this->Header->Data[i].Size)
 						{
 							throw 0;
 						}
@@ -1412,7 +1412,7 @@ vlBool CVTFFile::Save(IO::Writers::IWriter *Writer) const
 			if(this->Header->LowResImageFormat != IMAGE_FORMAT_NONE)
 			{
 				// write the thumbnail image data
-				if(Writer->Write(this->lpThumbnailImageData, this->uiThumbnailBufferSize) != this->uiThumbnailBufferSize)
+				if(Writer->Write(this->lpThumbnailImageData, this->uiThumbnailBufferSize, Error) != this->uiThumbnailBufferSize)
 				{
 					throw 0;
 				}
@@ -1421,7 +1421,7 @@ vlBool CVTFFile::Save(IO::Writers::IWriter *Writer) const
 			if(this->Header->ImageFormat != IMAGE_FORMAT_NONE)
 			{
 				// write the image data
-				if(Writer->Write(this->lpImageData, this->uiImageBufferSize) != this->uiImageBufferSize)
+				if(Writer->Write(this->lpImageData, this->uiImageBufferSize, Error) != this->uiImageBufferSize)
 				{
 					throw 0;
 				}
@@ -1997,7 +1997,7 @@ vlBool CVTFFile::GetHasResource(vlUInt uiType) const
 	return vlFalse;
 }
 
-vlVoid *CVTFFile::GetResourceData(vlUInt uiType, vlUInt &uiSize) const
+vlVoid *CVTFFile::GetResourceData(vlUInt uiType, vlUInt &uiSize, VTFLibError& Error) const
 {
 	if(this->IsLoaded())
 	{
@@ -2035,7 +2035,7 @@ vlVoid *CVTFFile::GetResourceData(vlUInt uiType, vlUInt &uiSize) const
 		}
 		else
 		{
-			LastError.Set("Resources require VTF file version v7.3 and up.");
+			Error.Set("Resources require VTF file version v7.3 and up.");
 		}
 	}
 
@@ -2043,7 +2043,7 @@ vlVoid *CVTFFile::GetResourceData(vlUInt uiType, vlUInt &uiSize) const
 	return 0;
 }
 
-vlVoid *CVTFFile::SetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData)
+vlVoid *CVTFFile::SetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData, VTFLibError& Error)
 {
 	if(this->IsLoaded())
 	{
@@ -2052,10 +2052,10 @@ vlVoid *CVTFFile::SetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData)
 			switch(uiType)
 			{
 			case VTF_LEGACY_RSRC_LOW_RES_IMAGE:
-				LastError.Set("Low resolution image resource cannot be modified through resource interface.");
+				Error.Set("Low resolution image resource cannot be modified through resource interface.");
 				break;
 			case VTF_LEGACY_RSRC_IMAGE:
-				LastError.Set("Image resource cannot be modified through resource interface.");
+				Error.Set("Image resource cannot be modified through resource interface.");
 				break;
 			default:
 				for(vlUInt i = 0; i < this->Header->ResourceCount; i++)
@@ -2080,7 +2080,7 @@ vlVoid *CVTFFile::SetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData)
 							{
 								if(uiSize != sizeof(vlUInt))
 								{
-									LastError.Set("Resources with no data chunk must have size 4.");
+									Error.Set("Resources with no data chunk must have size 4.");
 									return 0;
 								}
 								if(lpData == 0)
@@ -2121,7 +2121,7 @@ vlVoid *CVTFFile::SetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData)
 				{
 					if(this->Header->ResourceCount == VTF_RSRC_MAX_DICTIONARY_ENTRIES)
 					{
-						LastError.SetFormatted("Maximum directory entry count %u reached.", VTF_RSRC_MAX_DICTIONARY_ENTRIES);
+						Error.SetFormatted("Maximum directory entry count %u reached.", VTF_RSRC_MAX_DICTIONARY_ENTRIES);
 						return 0;
 					}
 
@@ -2137,7 +2137,7 @@ vlVoid *CVTFFile::SetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData)
 					{
 						if(uiSize != sizeof(vlUInt))
 						{
-							LastError.Set("Resources with no data chunk must have size 4.");
+							Error.Set("Resources with no data chunk must have size 4.");
 							return 0;
 						}
 						if(lpData != 0)
@@ -2174,7 +2174,7 @@ vlVoid *CVTFFile::SetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData)
 		}
 		else
 		{
-			LastError.Set("Resources require VTF file version v7.3 and up.");
+			Error.Set("Resources require VTF file version v7.3 and up.");
 		}
 	}
 
@@ -2185,7 +2185,7 @@ vlVoid *CVTFFile::SetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData)
 // GenerateMipmaps()
 // Generate mipmaps from the first mipmap level.
 //
-vlBool CVTFFile::GenerateMipmaps(VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter)
+vlBool CVTFFile::GenerateMipmaps(VTFLibError& Error, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter)
 {
 	if(!this->IsLoaded())
 		return vlFalse;
@@ -2200,7 +2200,7 @@ vlBool CVTFFile::GenerateMipmaps(VTFMipmapFilter MipmapFilter, VTFSharpenFilter 
 	{
 		for(vlUInt j = 0; j < uiFaceCount; j++)
 		{
-			if(!this->GenerateMipmaps(i, j, MipmapFilter, SharpenFilter))
+			if(!this->GenerateMipmaps(i, j, Error, MipmapFilter, SharpenFilter))
 			{
 				return vlFalse;
 			}
@@ -2214,7 +2214,7 @@ vlBool CVTFFile::GenerateMipmaps(VTFMipmapFilter MipmapFilter, VTFSharpenFilter 
 // GenerateMipmaps()
 // Generate mipmaps from the first mipmap level of the specified frame and face.
 //
-vlBool CVTFFile::GenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter)
+vlBool CVTFFile::GenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFLibError& Error, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter)
 {
 	if(!this->IsLoaded())
 		return vlFalse;
@@ -2222,13 +2222,13 @@ vlBool CVTFFile::GenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter 
 #ifdef USE_NVDXT
 	if(this->lpImageData == 0)
 	{
-		LastError.Set("No image data to generate mipmaps from.");
+		Error.Set("No image data to generate mipmaps from.");
 		return vlFalse;
 	}
 
 	if(this->Header->Depth > 1)
 	{
-		LastError.Set("Mipmap generation for depth textures is not supported.");
+		Error.Set("Mipmap generation for depth textures is not supported.");
 		return vlFalse;
 	}
 
@@ -2372,7 +2372,7 @@ vlBool CVTFFile::GenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter 
 	(void)uiFrame;
 	(void)MipmapFilter;
 	(void)SharpenFilter;
-	LastError.Set("NVDXT support required for CVTFFile::GenerateMipmaps().");
+	Error.Set("NVDXT support required for CVTFFile::GenerateMipmaps().");
 	return vlFalse;
 #endif
 }
@@ -2382,20 +2382,20 @@ vlBool CVTFFile::GenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter 
 // We should have a mipmap that matches the thumbnail size.  This function finds it and
 // copies it over to the mipmap data, converting it if need be.
 //
-vlBool CVTFFile::GenerateThumbnail()
+vlBool CVTFFile::GenerateThumbnail(VTFLibError& Error)
 {
 	if(!this->IsLoaded())
 		return vlFalse;
 
 	if(!this->GetHasThumbnail())
 	{
-		LastError.Set("VTF file does not have a thumbnail.");
+		Error.Set("VTF file does not have a thumbnail.");
 		return vlFalse;
 	}
 
 	if(this->lpImageData == 0)
 	{
-		LastError.Set("No image data to generate thumbnail from.");
+		Error.Set("No image data to generate thumbnail from.");
 		return vlFalse;
 	}
 
@@ -2415,7 +2415,7 @@ vlBool CVTFFile::GenerateThumbnail()
 			}
 			else
 			{
-				if(!CVTFFile::Convert(this->GetData(0, 0, 0, i), this->GetThumbnailData(), uiMipmapWidth, uiMipmapHeight, this->Header->ImageFormat, this->Header->LowResImageFormat))
+				if(!CVTFFile::Convert(this->GetData(0, 0, 0, i), this->GetThumbnailData(), uiMipmapWidth, uiMipmapHeight, this->Header->ImageFormat, this->Header->LowResImageFormat, Error))
 				{
 					return vlFalse;
 				}
@@ -2428,7 +2428,7 @@ vlBool CVTFFile::GenerateThumbnail()
 	vlByte *lpImageData = new vlByte[CVTFFile::ComputeImageSize(this->Header->Width, this->Header->Height, 1, IMAGE_FORMAT_RGBA8888)];
 	vlByte *lpThumbnailImageData = new vlByte[CVTFFile::ComputeImageSize(this->Header->LowResImageWidth, this->Header->LowResImageHeight, 1, IMAGE_FORMAT_RGBA8888)];
 
-	if(!CVTFFile::ConvertToRGBA8888(this->GetData(0, 0, 0, 0), lpImageData, this->Header->Width, this->Header->Height, this->Header->ImageFormat))
+	if(!CVTFFile::ConvertToRGBA8888(this->GetData(0, 0, 0, 0), lpImageData, this->Header->Width, this->Header->Height, this->Header->ImageFormat, Error))
 	{
 		delete []lpImageData;
 		delete []lpThumbnailImageData;
@@ -2436,7 +2436,7 @@ vlBool CVTFFile::GenerateThumbnail()
 		return vlFalse;
 	}
 
-	if(!CVTFFile::Resize(lpImageData, lpThumbnailImageData, this->Header->Width, this->Header->Height, this->Header->LowResImageWidth, this->Header->LowResImageHeight))
+	if(!CVTFFile::Resize(lpImageData, lpThumbnailImageData, this->Header->Width, this->Header->Height, this->Header->LowResImageWidth, this->Header->LowResImageHeight, Error))
 	{
 		delete []lpImageData;
 		delete []lpThumbnailImageData;
@@ -2444,7 +2444,7 @@ vlBool CVTFFile::GenerateThumbnail()
 		return vlFalse;
 	}
 
-	if(!CVTFFile::ConvertFromRGBA8888(lpThumbnailImageData, this->GetThumbnailData(), this->Header->LowResImageWidth, this->Header->LowResImageHeight, this->Header->LowResImageFormat))
+	if(!CVTFFile::ConvertFromRGBA8888(lpThumbnailImageData, this->GetThumbnailData(), this->Header->LowResImageWidth, this->Header->LowResImageHeight, this->Header->LowResImageFormat, Error))
 	{
 		delete []lpImageData;
 		delete []lpThumbnailImageData;
@@ -2463,7 +2463,7 @@ vlBool CVTFFile::GenerateThumbnail()
 // GenerateNormalMap()
 // Convert the first level mipmap of each frame to a normal map.
 //
-vlBool CVTFFile::GenerateNormalMap(VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult)
+vlBool CVTFFile::GenerateNormalMap(VTFLibError& Error, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult)
 {
 	if(!this->IsLoaded())
 		return vlFalse;
@@ -2472,7 +2472,7 @@ vlBool CVTFFile::GenerateNormalMap(VTFKernelFilter KernelFilter, VTFHeightConver
 
 	for(vlUInt i = 0; i < uiFrameCount; i++)
 	{
-		if(!this->GenerateNormalMap(i, KernelFilter, HeightConversionMethod, NormalAlphaResult))
+		if(!this->GenerateNormalMap(i, Error, KernelFilter, HeightConversionMethod, NormalAlphaResult))
 		{
 			return vlFalse;
 		}
@@ -2485,20 +2485,20 @@ vlBool CVTFFile::GenerateNormalMap(VTFKernelFilter KernelFilter, VTFHeightConver
 // GenerateNormalMap()
 // Convert the first level mipmap of the specified frame to a normal map.
 //
-vlBool CVTFFile::GenerateNormalMap(vlUInt uiFrame, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult)
+vlBool CVTFFile::GenerateNormalMap(vlUInt uiFrame, VTFLibError& Error, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult)
 {
 	if(!this->IsLoaded())
 		return vlFalse;
 
 	if(this->Header->Flags & TEXTUREFLAGS_ENVMAP)
 	{
-		LastError.Set("Image is an enviroment map.");
+		Error.Set("Image is an enviroment map.");
 		return vlFalse;
 	}
 
 	if(this->lpImageData == 0)
 	{
-		LastError.Set("No image data to generate normal map from.");
+		Error.Set("No image data to generate normal map from.");
 		return vlFalse;
 	}
 
@@ -2508,7 +2508,7 @@ vlBool CVTFFile::GenerateNormalMap(vlUInt uiFrame, VTFKernelFilter KernelFilter,
 	vlByte *lpSource = new vlByte[this->ComputeImageSize(this->Header->Width, this->Header->Height, 1, IMAGE_FORMAT_RGBA8888)];
 
 	// Get the frame's image data.
-	if(!this->ConvertToRGBA8888(lpData, lpSource, this->Header->Width, this->Header->Height, this->Header->ImageFormat))
+	if(!this->ConvertToRGBA8888(lpData, lpSource, this->Header->Width, this->Header->Height, this->Header->ImageFormat, Error))
 	{
 		delete []lpSource;
 
@@ -2519,7 +2519,7 @@ vlBool CVTFFile::GenerateNormalMap(vlUInt uiFrame, VTFKernelFilter KernelFilter,
 	//vlByte *lpDest = new vlByte[this->ComputeImageSize(this->Header->Width, this->Header->Height, IMAGE_FORMAT_RGBA8888)];
 
 	// Convert it to a normal map.
-	if(!this->ConvertToNormalMap(lpSource, 0/*lpDest*/, this->Header->Width, this->Header->Height, KernelFilter, HeightConversionMethod, NormalAlphaResult))
+	if(!this->ConvertToNormalMap(lpSource, 0/*lpDest*/, this->Header->Width, this->Header->Height, Error, KernelFilter, HeightConversionMethod, NormalAlphaResult))
 	{
 		delete []lpSource;
 		//delete []lpDest;
@@ -2530,7 +2530,7 @@ vlBool CVTFFile::GenerateNormalMap(vlUInt uiFrame, VTFKernelFilter KernelFilter,
 	//delete []lpSource;
 
 	// Set the frame's image data.
-	if(!this->ConvertFromRGBA8888(lpSource/*lpDest*/, lpData, this->Header->Width, this->Header->Height, this->Header->ImageFormat))
+	if(!this->ConvertFromRGBA8888(lpSource/*lpDest*/, lpData, this->Header->Width, this->Header->Height, this->Header->ImageFormat, Error))
 	{
 		delete []lpSource;	// Moved from above.
 		//delete []lpDest;
@@ -2575,26 +2575,26 @@ struct NColour
 // GenerateSphereMap()
 // Generate a sphere map from the first six faces (the cube map) of an enviroment map.
 //
-vlBool CVTFFile::GenerateSphereMap()
+vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 {
 	if(!this->IsLoaded())
 		return vlFalse;
 
 	if(!(this->Header->Flags & TEXTUREFLAGS_ENVMAP))
 	{
-		LastError.Set("Image is not an enviroment map.");
+		Error.Set("Image is not an enviroment map.");
 		return vlFalse;
 	}
 
 	if(this->Header->StartFrame == 0xffff)
 	{
-		LastError.Set("Enviroment map does not have a sphere map.");
+		Error.Set("Enviroment map does not have a sphere map.");
 		return vlFalse;
 	}
 
 	if(this->lpImageData == 0)
 	{
-		LastError.Set("No image data to generate sphere map from.");
+		Error.Set("No image data to generate sphere map from.");
 		return vlFalse;
 	}
 
@@ -2619,12 +2619,12 @@ vlBool CVTFFile::GenerateSphereMap()
 
 		lpImageData[j] = new vlByte[this->ComputeImageSize(uiWidth, uiHeight, 1, IMAGE_FORMAT_RGBA8888)]; 
 		
-		if(!this->ConvertToRGBA8888(this->GetData(0, i, 0, 0), lpImageData[j], uiWidth, uiHeight, this->Header->ImageFormat)) 
+		if(!this->ConvertToRGBA8888(this->GetData(0, i, 0, 0), lpImageData[j], uiWidth, uiHeight, this->Header->ImageFormat, Error)) 
 		{ 
 			for(vlUInt l = 0; l < 6; l++)  
 				delete[] lpImageData[l];  
 			
-			LastError.Set("Could not convert source to RGBA8888 format");
+			Error.Set("Could not convert source to RGBA8888 format");
 			return vlFalse; 
 		} 
 		SFace[j].buf = (vlUInt *)lpImageData[j];	// save the address
@@ -2755,7 +2755,8 @@ vlBool CVTFFile::GenerateSphereMap()
 									this->GetData(0, CUBEMAP_FACE_SphereMap, 0, 0),
 									this->Header->Width,
 									this->Header->Height,
-									this->Header->ImageFormat) )
+									this->Header->ImageFormat,
+									Error) )
 	{
 		for(i = 0; i < 6; i++)
 		{
@@ -2780,14 +2781,14 @@ vlBool CVTFFile::GenerateSphereMap()
 // ComputeReflectivity()
 // Compute the reflectivity value of the texture using all faces and frames.
 //
-vlBool CVTFFile::ComputeReflectivity()
+vlBool CVTFFile::ComputeReflectivity(VTFLibError& Error)
 {
 	if(!this->IsLoaded())
 		return vlFalse;
 
 	if(this->lpImageData == 0)
 	{
-		LastError.Set("No image data to compute reflectivity from.");
+		Error.Set("No image data to compute reflectivity from.");
 
 		return vlFalse;
 	}
@@ -2808,7 +2809,7 @@ vlBool CVTFFile::ComputeReflectivity()
         {
 			for(vlUInt uiSlice = 0; uiSlice < uiSliceCount; uiSlice++)
 			{
-				if(!this->ConvertToRGBA8888(this->GetData(uiFrame, uiFace, uiSlice, 0), lpImageData, this->Header->Width, this->Header->Height, this->Header->ImageFormat))
+				if(!this->ConvertToRGBA8888(this->GetData(uiFrame, uiFace, uiSlice, 0), lpImageData, this->Header->Width, this->Header->Height, this->Header->ImageFormat, Error))
 				{
 					delete []lpImageData;
 
@@ -3106,9 +3107,9 @@ vlUInt CVTFFile::ComputeDataOffset(vlUInt uiFrame, vlUInt uiFace, vlUInt uiSlice
 // Converts data from the source format to RGBA8888 format. Data is read from *src
 // and written to *dst. Width and height are needed to it knows how much data to process
 //-----------------------------------------------------------------------------------------------------
-vlBool CVTFFile::ConvertToRGBA8888(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat SourceFormat)
+vlBool CVTFFile::ConvertToRGBA8888(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat SourceFormat, VTFLibError& Error)
 {
-	return CVTFFile::Convert(lpSource, lpDest, uiWidth, uiHeight, SourceFormat, IMAGE_FORMAT_RGBA8888);
+	return CVTFFile::Convert(lpSource, lpDest, uiWidth, uiHeight, SourceFormat, IMAGE_FORMAT_RGBA8888, Error);
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -3450,9 +3451,9 @@ vlBool CVTFFile::DecompressDXT5(const vlByte *src, vlByte *dst, vlUInt uiWidth, 
 // ConvertFromRGBA8888()
 // Convert input image data (lpSource) to output image data (lpDest) of format DestFormat.
 //
-vlBool CVTFFile::ConvertFromRGBA8888(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat DestFormat)
+vlBool CVTFFile::ConvertFromRGBA8888(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat DestFormat, VTFLibError& Error)
 {
-	return CVTFFile::Convert(lpSource, lpDest, uiWidth, uiHeight, IMAGE_FORMAT_RGBA8888, DestFormat);
+	return CVTFFile::Convert(lpSource, lpDest, uiWidth, uiHeight, IMAGE_FORMAT_RGBA8888, DestFormat, Error);
 }
 
 //
@@ -3460,7 +3461,7 @@ vlBool CVTFFile::ConvertFromRGBA8888(const vlByte *lpSource, vlByte *lpDest, vlU
 // Compress input image data (lpSource) to output image data (lpDest) of format DestFormat
 // where DestFormat is of format DXTn.  Uses NVidia DXT library.
 //
-vlBool CVTFFile::CompressDXTn(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat DestFormat)
+vlBool CVTFFile::CompressDXTn(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat DestFormat, VTFLibError& Error)
 {
 #ifdef USE_NVDXT
 	nvCompressionOptions Options = nvCompressionOptions();
@@ -3508,7 +3509,7 @@ vlBool CVTFFile::CompressDXTn(const vlByte *lpSource, vlByte *lpDest, vlUInt uiW
 		Options.textureFormat = kDXT5;
 		break;
 	default:
-		LastError.Set("Destination image format not supported.");
+		Error.Set("Destination image format not supported.");
 		return vlFalse;
 	}
 
@@ -3554,7 +3555,7 @@ vlBool CVTFFile::CompressDXTn(const vlByte *lpSource, vlByte *lpDest, vlUInt uiW
 		dstRowStride = ((uiWidth + 3) / 4) * 16;
 		break;
 	default:
-		LastError.Set("Destination image format not supported.");
+		Error.Set("Destination image format not supported.");
 		return vlFalse;
 	}
 
@@ -3567,7 +3568,7 @@ vlBool CVTFFile::CompressDXTn(const vlByte *lpSource, vlByte *lpDest, vlUInt uiW
 	(void)uiWidth;
 	(void)uiHeight;
 	(void)DestFormat;
-	LastError.Set("NVDXT or libtxc_dxtn support required for DXTn compression).");
+	Error.Set("NVDXT or libtxc_dxtn support required for DXTn compression).");
 	return vlFalse;
 #endif
 }
@@ -3974,7 +3975,7 @@ vlBool ConvertTemplated(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, 
 	return vlTrue;
 }
 
-vlBool CVTFFile::Convert(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat SourceFormat, VTFImageFormat DestFormat)
+vlBool CVTFFile::Convert(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat SourceFormat, VTFImageFormat DestFormat, VTFLibError& Error)
 {
 	assert(lpSource != 0);
 	assert(lpDest != 0);
@@ -3987,7 +3988,7 @@ vlBool CVTFFile::Convert(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth,
 
 	if(!SourceInfo.bIsSupported || !DestInfo.bIsSupported)
 	{
-		LastError.Set("Image format conversion not supported.");
+		Error.Set("Image format conversion not supported.");
 
 		return vlFalse;
 	}
@@ -4069,7 +4070,7 @@ vlBool CVTFFile::Convert(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth,
 			lpSourceRGBA = lpTemp;
 			break;
 		default:
-			bResult = CVTFFile::Convert(lpSource, lpTemp, uiWidth, uiHeight, SourceFormat, IMAGE_FORMAT_RGBA8888);
+			bResult = CVTFFile::Convert(lpSource, lpTemp, uiWidth, uiHeight, SourceFormat, IMAGE_FORMAT_RGBA8888, Error);
 			lpSourceRGBA = lpTemp;
 			break;
 		}
@@ -4083,10 +4084,10 @@ vlBool CVTFFile::Convert(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth,
 			case IMAGE_FORMAT_DXT1_ONEBITALPHA:
 			case IMAGE_FORMAT_DXT3:
 			case IMAGE_FORMAT_DXT5:
-				bResult = CVTFFile::CompressDXTn(lpSourceRGBA, lpDest, uiWidth, uiHeight, DestFormat);
+				bResult = CVTFFile::CompressDXTn(lpSourceRGBA, lpDest, uiWidth, uiHeight, DestFormat, Error);
 				break;
 			default:
-				bResult = CVTFFile::Convert(lpSourceRGBA, lpDest, uiWidth, uiHeight, IMAGE_FORMAT_RGBA8888, DestFormat);
+				bResult = CVTFFile::Convert(lpSourceRGBA, lpDest, uiWidth, uiHeight, IMAGE_FORMAT_RGBA8888, DestFormat, Error);
 				break;
 			}
 		}
@@ -4154,7 +4155,7 @@ vlBool CVTFFile::Convert(const vlByte *lpSource, vlByte *lpDest, vlUInt uiWidth,
 // Convert source data (in format RGBA8888) to a normal map.  If dest data is null then the
 // result is copied back into the source data.
 //
-vlBool CVTFFile::ConvertToNormalMap(const vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, vlUInt uiWidth, vlUInt uiHeight, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, vlByte bMinimumZ, vlSingle sScale, vlBool bWrap, vlBool bInvertX, vlBool bInvertY, vlBool bInvertZ)
+vlBool CVTFFile::ConvertToNormalMap(const vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, vlUInt uiWidth, vlUInt uiHeight, VTFLibError& Error, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, vlByte bMinimumZ, vlSingle sScale, vlBool bWrap, vlBool bInvertX, vlBool bInvertY, vlBool bInvertZ)
 {
 	assert(KernelFilter >= 0 && KernelFilter < KERNEL_FILTER_COUNT);
 	assert(HeightConversionMethod >= 0 && HeightConversionMethod < HEIGHT_CONVERSION_METHOD_COUNT);
@@ -4205,12 +4206,12 @@ vlBool CVTFFile::ConvertToNormalMap(const vlByte *lpSourceRGBA8888, vlByte *lpDe
 	(void)HeightConversionMethod;
 	(void)NormalAlphaResult;
 
-	LastError.Set("NVDXT support required for CVTFFile::ConvertToNormalMap().");
+	Error.Set("NVDXT support required for CVTFFile::ConvertToNormalMap().");
 	return vlFalse;
 #endif
 }
 
-vlBool CVTFFile::Resize(const vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, vlUInt uiSourceWidth, vlUInt uiSourceHeight, vlUInt uiDestWidth, vlUInt uiDestHeight, VTFMipmapFilter ResizeFilter, VTFSharpenFilter SharpenFilter)
+vlBool CVTFFile::Resize(const vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, vlUInt uiSourceWidth, vlUInt uiSourceHeight, vlUInt uiDestWidth, vlUInt uiDestHeight, VTFLibError& Error, VTFMipmapFilter ResizeFilter, VTFSharpenFilter SharpenFilter)
 {
 	assert(ResizeFilter >= 0 && ResizeFilter < MIPMAP_FILTER_COUNT);
 	assert(SharpenFilter >= 0 && SharpenFilter < SHARPEN_FILTER_COUNT);
@@ -4261,7 +4262,7 @@ vlBool CVTFFile::Resize(const vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, 
 	(void)ResizeFilter;
 	(void)SharpenFilter;
 
-	LastError.Set("NVDXT support required for CVTFFile::Resize().");
+	Error.Set("NVDXT support required for CVTFFile::Resize().");
 	return vlFalse;
 #endif
 }

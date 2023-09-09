@@ -28,11 +28,12 @@ namespace VTFLib
 // vlMaterialBound()
 // Returns true if an material is bound, false otherwise.
 //
-VTFLIB_API vlBool vlMaterialIsBound()
+VTFLIB_API vlBool vlMaterialIsBound(VTFLibError* Error)
 {
 	if(!bInitialized)
 	{
-		LastError.Set("VTFLib not initialized.");
+		Error->Set("VTFLib not initialized.");
+		
 		return vlFalse;
 	}
 
@@ -44,17 +45,17 @@ VTFLIB_API vlBool vlMaterialIsBound()
 // Bind a material to operate on.
 // All library routines will use this material.
 //
-VTFLIB_API vlBool vlBindMaterial(vlUInt uiMaterial)
+VTFLIB_API vlBool vlBindMaterial(vlUInt uiMaterial, VTFLibError* Error)
 {
 	if(!bInitialized)
 	{
-		LastError.Set("VTFLib not initialized.");
+		Error->Set("VTFLib not initialized.");
 		return vlFalse;
 	}
 
 	if(uiMaterial >= MaterialVector->size() || (*MaterialVector)[uiMaterial] == 0)
 	{
-		LastError.Set("Invalid material.");
+		Error->Set("Invalid material.");
 		return vlFalse;
 	}
 
@@ -73,11 +74,11 @@ VTFLIB_API vlBool vlBindMaterial(vlUInt uiMaterial)
 // vlCreateMaterial()
 // Create an material to work on.
 //
-VTFLIB_API vlBool vlCreateMaterial(vlUInt *uiMaterial)
+VTFLIB_API vlBool vlCreateMaterial(vlUInt *uiMaterial, VTFLibError* Error)
 {
 	if(!bInitialized)
 	{
-		LastError.Set("VTFLib not initialized.");
+		Error->Set("VTFLib not initialized.");
 		return vlFalse;
 	}
 
@@ -115,11 +116,11 @@ VTFLIB_API vlVoid vlDeleteMaterial(vlUInt uiMaterial)
 	(*MaterialVector)[uiMaterial] = 0;
 }
 
-VTFLIB_API vlBool vlMaterialCreate(const vlChar *cRoot)
+VTFLIB_API vlBool vlMaterialCreate(const vlChar *cRoot, VTFLibError* Error)
 {
 	if(Material == 0)
 	{
-		LastError.Set("No material bound.");
+		Error->Set("No material bound.");
 		return vlFalse;
 	}
 
@@ -142,22 +143,22 @@ VTFLIB_API vlVoid vlMaterialDestroy()
 	Material->Destroy();
 }
 
-VTFLIB_API vlBool vlMaterialIsLoaded()
+VTFLIB_API vlBool vlMaterialIsLoaded(VTFLibError* Error)
 {
 	if(Material == 0)
 	{
-		LastError.Set("No material bound.");
+		Error->Set("No material bound.");
 		return vlFalse;
 	}
 
 	return Material->IsLoaded();
 }
 
-VTFLIB_API vlBool vlMaterialLoad(const vlChar *cFileName)
+VTFLIB_API vlBool vlMaterialLoad(const vlChar *cFileName, VTFLibError* Error)
 {
 	if(Material == 0)
 	{
-		LastError.Set("No material bound.");
+		Error->Set("No material bound.");
 		return vlFalse;
 	}
 
@@ -167,11 +168,11 @@ VTFLIB_API vlBool vlMaterialLoad(const vlChar *cFileName)
 	return Material->Load(cFileName);
 }
 
-VTFLIB_API vlBool vlMaterialLoadLump(const vlVoid *lpData, vlSize uiBufferSize)
+VTFLIB_API vlBool vlMaterialLoadLump(const vlVoid *lpData, vlSize uiBufferSize, VTFLibError* Error)
 {
 	if(Material == 0)
 	{
-		LastError.Set("No material bound.");
+		Error->Set("No material bound.");
 		return vlFalse;
 	}
 
@@ -181,11 +182,11 @@ VTFLIB_API vlBool vlMaterialLoadLump(const vlVoid *lpData, vlSize uiBufferSize)
 	return Material->Load(lpData, uiBufferSize);
 }
 
-VTFLIB_API vlBool vlMaterialLoadProc(vlVoid *pUserData)
+VTFLIB_API vlBool vlMaterialLoadProc(vlVoid *pUserData, VTFLibError* Error)
 {
 	if(Material == 0)
 	{
-		LastError.Set("No material bound.");
+		Error->Set("No material bound.");
 		return vlFalse;
 	}
 
@@ -195,33 +196,33 @@ VTFLIB_API vlBool vlMaterialLoadProc(vlVoid *pUserData)
 	return Material->Load(pUserData);
 }
 
-VTFLIB_API vlBool vlMaterialSave(const vlChar *cFileName)
+VTFLIB_API vlBool vlMaterialSave(const vlChar *cFileName, VTFLibError* Error)
 {
 	if(Material == 0)
 	{
-		LastError.Set("No material bound.");
+		Error->Set("No material bound.");
 		return vlFalse;
 	}
 
 	return Material->Save(cFileName);
 }
 
-VTFLIB_API vlBool vlMaterialSaveLump(vlVoid *lpData, vlSize uiBufferSize, vlSize *uiSize)
+VTFLIB_API vlBool vlMaterialSaveLump(vlVoid *lpData, vlSize uiBufferSize, vlSize *uiSize, VTFLibError* Error)
 {
 	if(Material == 0)
 	{
-		LastError.Set("No material bound.");
+		Error->Set("No material bound.");
 		return vlFalse;
 	}
 
-	return Material->Save(lpData, uiBufferSize, *uiSize);
+	return Material->Save(lpData, uiBufferSize, *uiSize, *Error);
 }
 
-VTFLIB_API vlBool vlMaterialSaveProc(vlVoid *pUserData)
+VTFLIB_API vlBool vlMaterialSaveProc(vlVoid *pUserData, VTFLibError* Error)
 {
 	if(Material == 0)
 	{
-		LastError.Set("No material bound.");
+		Error->Set("No material bound.");
 		return vlFalse;
 	}
 

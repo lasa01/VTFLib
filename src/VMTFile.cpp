@@ -62,13 +62,13 @@ vlBool CVMTFile::IsLoaded() const
 vlBool CVMTFile::Load(const vlChar *cFileName)
 {
 	IO::Readers::CFileReader reader(cFileName);
-	return this->Load(&reader);
+	return this->Load(&reader );
 }
 
 vlBool CVMTFile::Load(const vlVoid *lpData, vlSize uiBufferSize)
 {
 	IO::Readers::CMemoryReader reader(lpData, uiBufferSize);
-	return this->Load(&reader);
+	return this->Load(&reader );
 }
 
 vlBool CVMTFile::Load(vlVoid *pUserData)
@@ -83,7 +83,7 @@ vlBool CVMTFile::Save(const vlChar *cFileName) const
 	return this->Save(&writer);
 }
 
-vlBool CVMTFile::Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize) const
+vlBool CVMTFile::Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize, VTFLib::Diagnostics::CError& Error) const
 {
 	uiSize = 0;
 
@@ -91,7 +91,7 @@ vlBool CVMTFile::Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize) const
 
 	vlBool bResult = this->Save(&MemoryWriter);
 
-	uiSize = MemoryWriter.GetStreamSize();
+	uiSize = MemoryWriter.GetStreamSize(Error);
 
 	return bResult;
 }
@@ -219,9 +219,10 @@ private:
 private:
 	CToken *CurrentToken;
 	CToken *NextToken;
+	VTFLib::Diagnostics::CError *Error;
 
 public:
-	CByteTokenizer(IO::Readers::IReader *Reader) : uiLine(1), Reader(Reader), CurrentToken(0), NextToken(0)
+	CByteTokenizer(IO::Readers::IReader *Reader, VTFLib::Diagnostics::CError* Error) : uiLine(1), Reader(Reader), CurrentToken(0), NextToken(0), Error(Error)
 	{
 		this->GetNextToken();
 	}
@@ -237,7 +238,7 @@ private:
 	{
 		vlChar cChar;
 
-		if(!Reader->Read(cChar))
+		if(!Reader->Read(cChar, *this->Error))
 		{
 			this->NextToken = new CToken(TOKEN_EOF);
 			return;
@@ -692,15 +693,15 @@ private:
 // Parses a .vmt file.  Note, the parser is very loose.  .vmt files vary
 // so much in the official resources that it is hard to know what is legal.
 //
-vlBool CVMTFile::Load(IO::Readers::IReader *Reader)
+vlBool CVMTFile::Load(IO::Readers::IReader *Reader, VTFLib::Diagnostics::CError& Error)
 {
 	delete this->Root;
 	this->Root = 0;
 
-	if(!Reader->Open())
+	if(!Reader->Open(Error))
 		return vlFalse;
 
-	CByteTokenizer ByteTokenizer = CByteTokenizer(Reader);
+	CByteTokenizer ByteTokenizer = CByteTokenizer(Reader, &Error);
 	CTokenizer Tokenizer = CTokenizer(&ByteTokenizer);
 	CParser Parser = CParser(&Tokenizer);
 
@@ -710,7 +711,7 @@ vlBool CVMTFile::Load(IO::Readers::IReader *Reader)
 	}
 	catch(char *cErrorMessage)
 	{
-		LastError.SetFormatted("Error parsing material on line %u (%s).", Tokenizer.GetLine(), cErrorMessage);
+		Error.SetFormatted("Error parsing material on line %u (%s).", Tokenizer.GetLine(), cErrorMessage);
 	}
 
 	Reader->Close();
@@ -939,18 +940,18 @@ vlBool CVMTFile::Load(IO::Readers::IReader *Reader)
 	}
 }*/
 
-vlBool CVMTFile::Save(IO::Writers::IWriter *Writer) const
+vlBool CVMTFile::Save(IO::Writers::IWriter *Writer, VTFLib::Diagnostics::CError& Error) const
 {
 	if(this->Root == 0)
 	{
-		LastError.Set("No material loaded.");
+		Error.Set("No material loaded.");
 		return vlFalse;
 	}
 
-	if(!Writer->Open())
+	if(!Writer->Open(Error))
 		return vlFalse;
 
-	this->Save(Writer, this->Root);
+	this->Save(Writer, this->Root, Error);
 
 	Writer->Close();
 
@@ -961,11 +962,11 @@ vlBool CVMTFile::Save(IO::Writers::IWriter *Writer) const
 // Indent()
 // Indents a line uiLevel tab sapces.
 //
-vlVoid CVMTFile::Indent(IO::Writers::IWriter *Writer, vlUInt uiLevel) const
+vlVoid CVMTFile::Indent(IO::Writers::IWriter *Writer, vlUInt uiLevel, VTFLib::Diagnostics::CError& Error) const
 {
 	for(vlUInt i = 0; i < uiLevel; i++)
 	{
-		Writer->Write('\t');
+		Writer->Write('\t', Error);
 	}
 }
 
@@ -973,7 +974,7 @@ vlVoid CVMTFile::Indent(IO::Writers::IWriter *Writer, vlUInt uiLevel) const
 // Save()
 // Saves a node to a file.
 //
-vlVoid CVMTFile::Save(IO::Writers::IWriter *Writer, CVMTNode *Node, vlUInt uiLevel) const
+vlVoid CVMTFile::Save(IO::Writers::IWriter *Writer, CVMTNode *Node, VTFLib::Diagnostics::CError& Error, vlUInt uiLevel) const
 {
 	vlChar cBuffer[2048];
 
@@ -981,46 +982,46 @@ vlVoid CVMTFile::Save(IO::Writers::IWriter *Writer, CVMTNode *Node, vlUInt uiLev
 	{
 		CVMTGroupNode *Group = static_cast<CVMTGroupNode *>(Node);
 
-		this->Indent(Writer, uiLevel);
+		this->Indent(Writer, uiLevel, Error);
 		sprintf(cBuffer, "\"%s\"\r\n", Group->GetName());
-		Writer->Write(cBuffer, (vlSize)strlen(cBuffer));
+		Writer->Write(cBuffer, (vlSize)strlen(cBuffer), Error);
 
-		this->Indent(Writer, uiLevel);
+		this->Indent(Writer, uiLevel, Error);
 		sprintf(cBuffer, "{\r\n");
-		Writer->Write(cBuffer, (vlSize)strlen(cBuffer));
+		Writer->Write(cBuffer, (vlSize)strlen(cBuffer), Error);
 
 		for(vlUInt i = 0; i < Group->GetNodeCount(); i++)
 		{
-			this->Save(Writer, Group->GetNode(i), uiLevel + 1);
+			this->Save(Writer, Group->GetNode(i), Error, uiLevel + 1);
 		}
 
-		this->Indent(Writer, uiLevel);
+		this->Indent(Writer, uiLevel, Error);
 		sprintf(cBuffer, "}\r\n");
-		Writer->Write(cBuffer, (vlSize)strlen(cBuffer));
+		Writer->Write(cBuffer, (vlSize)strlen(cBuffer), Error);
 	}
 	else if(Node->GetType() == NODE_TYPE_STRING)
 	{
 		CVMTStringNode *String = static_cast<CVMTStringNode *>(Node);
 
-		this->Indent(Writer, uiLevel);
+		this->Indent(Writer, uiLevel, Error);
 		sprintf(cBuffer, "\"%s\" \"%s\"\r\n", String->GetName(), String->GetValue());
-		Writer->Write(cBuffer, (vlSize)strlen(cBuffer));
+		Writer->Write(cBuffer, (vlSize)strlen(cBuffer), Error);
 	}
 	else if(Node->GetType() == NODE_TYPE_INTEGER)
 	{
 		CVMTIntegerNode *Integer = static_cast<CVMTIntegerNode *>(Node);
 
-		this->Indent(Writer, uiLevel);
+		this->Indent(Writer, uiLevel, Error);
 		sprintf(cBuffer, "\"%s\" %d\r\n", Integer->GetName(), Integer->GetValue());
-		Writer->Write(cBuffer, (vlSize)strlen(cBuffer));
+		Writer->Write(cBuffer, (vlSize)strlen(cBuffer), Error);
 	}
 	else if(Node->GetType() == NODE_TYPE_SINGLE)
 	{
 		CVMTSingleNode *Single = static_cast<CVMTSingleNode *>(Node);
 
-		this->Indent(Writer, uiLevel);
+		this->Indent(Writer, uiLevel, Error);
 		sprintf(cBuffer, "\"%s\" %f\r\n", Single->GetName(), Single->GetValue());
-		Writer->Write(cBuffer, (vlSize)strlen(cBuffer));
+		Writer->Write(cBuffer, (vlSize)strlen(cBuffer), Error);
 	}
 }
 

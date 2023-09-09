@@ -17,6 +17,7 @@
 #	include "Readers.h"
 #	include "Writers.h"
 #	include "VMTNodes.h"
+#	include "Error.h"
 #else
 #	include "VMTNode.h"
 #endif
@@ -62,17 +63,17 @@ namespace VTFLib
 		vlBool Load(vlVoid *pUserData);
 
 		vlBool Save(const vlChar *cFileName) const;
-		vlBool Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize) const;
+		vlBool Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize, VTFLib::Diagnostics::CError& Error) const;
 		vlBool Save(vlVoid *pUserData) const;
 
 	private:
-		vlBool Load(IO::Readers::IReader *Reader);
-		vlBool Save(IO::Writers::IWriter *Writer) const;
+		vlBool Load(IO::Readers::IReader *Reader, VTFLib::Diagnostics::CError& Error);
+		vlBool Save(IO::Writers::IWriter *Writer, VTFLib::Diagnostics::CError& Error) const;
 
 		//Nodes::CVMTNode *Load(IO::Readers::IReader *Reader, vlBool bInGroup);
 
-		vlVoid Indent(IO::Writers::IWriter *Writer, vlUInt uiLevel) const;
-		vlVoid Save(IO::Writers::IWriter *Writer, Nodes::CVMTNode *Node, vlUInt uiLevel = 0) const;
+		vlVoid Indent(IO::Writers::IWriter *Writer, vlUInt uiLevel, VTFLib::Diagnostics::CError& Error) const;
+		vlVoid Save(IO::Writers::IWriter *Writer, Nodes::CVMTNode *Node, VTFLib::Diagnostics::CError& Error, vlUInt uiLevel = 0) const;
 
 	public:
 		Nodes::CVMTGroupNode *GetRoot() const;

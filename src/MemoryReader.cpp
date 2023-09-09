@@ -36,11 +36,11 @@ vlBool CMemoryReader::Opened() const
 	return this->bOpened;
 }
 
-vlBool CMemoryReader::Open()
+vlBool CMemoryReader::Open(VTFLibError &Error)
 {
 	if(vData == 0)
 	{
-		LastError.Set("Memory stream is null.");
+		Error.Set("Memory stream is null.");
 		return vlFalse;
 	}
 
@@ -56,7 +56,7 @@ vlVoid CMemoryReader::Close()
 	this->bOpened = vlFalse;
 }
 
-vlSSize CMemoryReader::GetStreamSize() const
+vlSSize CMemoryReader::GetStreamSize(VTFLibError &Error) const
 {
 	if(!this->bOpened)
 	{
@@ -66,7 +66,7 @@ vlSSize CMemoryReader::GetStreamSize() const
 	return this->uiBufferSize;
 }
 
-vlSSize CMemoryReader::GetStreamPointer() const
+vlSSize CMemoryReader::GetStreamPointer(VTFLibError &Error) const
 {
 	if(!this->bOpened)
 	{
@@ -76,7 +76,7 @@ vlSSize CMemoryReader::GetStreamPointer() const
 	return this->uiPointer;
 }
 
-vlSSize CMemoryReader::Seek(vlOffset lOffset, VLSeekMode uiMode)
+vlSSize CMemoryReader::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError &Error)
 {
 	if(!this->bOpened)
 	{
@@ -113,7 +113,7 @@ vlSSize CMemoryReader::Seek(vlOffset lOffset, VLSeekMode uiMode)
 	return (vlSSize)this->uiPointer;
 }
 
-vlBool CMemoryReader::Read(vlChar &cChar)
+vlBool CMemoryReader::Read(vlChar &cChar, VTFLibError &Error)
 {
 	if(!this->bOpened)
 	{
@@ -122,7 +122,7 @@ vlBool CMemoryReader::Read(vlChar &cChar)
 
 	if(this->uiPointer == this->uiBufferSize)
 	{
-		LastError.Set("End of memory stream.");
+		Error.Set("End of memory stream.");
 
 		return vlFalse;
 	}
@@ -134,7 +134,7 @@ vlBool CMemoryReader::Read(vlChar &cChar)
 	}
 }
 
-vlSize CMemoryReader::Read(vlVoid *vData, vlSize uiBytes)
+vlSize CMemoryReader::Read(vlVoid *vData, vlSize uiBytes, VTFLibError &Error)
 {
 	if(!this->bOpened)
 	{
@@ -154,7 +154,7 @@ vlSize CMemoryReader::Read(vlVoid *vData, vlSize uiBytes)
 
 		this->uiPointer = this->uiBufferSize;
 
-		LastError.Set("End of memory stream.");
+		Error.Set("End of memory stream.");
 
 		return uiBytes;
 	}

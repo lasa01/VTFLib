@@ -14,6 +14,7 @@
 
 #include "stdafx.h"
 #include "Writer.h"
+#include "Error.h"
 
 namespace VTFLib
 {
@@ -39,16 +40,16 @@ namespace VTFLib
 			public:
 				virtual vlBool Opened() const;
 
-				virtual vlBool Open();
+				virtual vlBool Open(VTFLib::Diagnostics::CError &Error);
 				virtual vlVoid Close();
 
-				virtual vlSSize GetStreamSize() const;
-				virtual vlSSize GetStreamPointer() const;
+				virtual vlSSize GetStreamSize(VTFLib::Diagnostics::CError &Error) const;
+				virtual vlSSize GetStreamPointer(VTFLib::Diagnostics::CError &Error) const;
 
-				virtual vlSSize Seek(vlOffset lOffset, VLSeekMode uiMode);
+				virtual vlSSize Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLib::Diagnostics::CError &Error);
 
-				virtual vlBool Write(vlChar cChar);
-				virtual vlSize Write(vlVoid *vData, vlSize uiBytes);
+				virtual vlBool Write(vlChar cChar, VTFLib::Diagnostics::CError &Error);
+				virtual vlSize Write(vlVoid *vData, vlSize uiBytes, VTFLib::Diagnostics::CError &Error);
 			};
 		}
 	}

@@ -13,6 +13,7 @@
 #define VTFLIB_WRITER_H
 
 #include "stdafx.h"
+#include "Error.h"
 
 namespace VTFLib
 {
@@ -26,16 +27,16 @@ namespace VTFLib
 				virtual ~IWriter() {}
 				virtual vlBool Opened() const = 0;
 
-				virtual vlBool Open() = 0;
+				virtual vlBool Open(VTFLib::Diagnostics::CError &Error) = 0;
 				virtual vlVoid Close() = 0;
 
-				virtual vlSSize GetStreamSize() const = 0;
-				virtual vlSSize GetStreamPointer() const = 0;
+				virtual vlSSize GetStreamSize(VTFLib::Diagnostics::CError &Error) const = 0;
+				virtual vlSSize GetStreamPointer(VTFLib::Diagnostics::CError &Error) const = 0;
 
-				virtual vlSSize Seek(vlOffset lOffset, VLSeekMode uiMode) = 0;
+				virtual vlSSize Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLib::Diagnostics::CError &Error) = 0;
 
-				virtual vlBool Write(vlChar cChar) = 0;
-				virtual vlSize Write(vlVoid *vData, vlSize uiBytes) = 0;
+				virtual vlBool Write(vlChar cChar, VTFLib::Diagnostics::CError &Error) = 0;
+				virtual vlSize Write(vlVoid *vData, vlSize uiBytes, VTFLib::Diagnostics::CError &Error) = 0;
 			};
 		}
 	}

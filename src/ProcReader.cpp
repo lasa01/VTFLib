@@ -34,25 +34,25 @@ vlBool CProcReader::Opened() const
 	return this->bOpened;
 }
 
-vlBool CProcReader::Open()
+vlBool CProcReader::Open(VTFLibError &Error)
 {
 	this->Close();
 
 	if(pReadOpenProc == 0)
 	{
-		LastError.Set("pReadOpenProc not set.");
+		Error.Set("pReadOpenProc not set.");
 		return vlFalse;
 	}
 
 	if(this->bOpened)
 	{
-		LastError.Set("Reader already open.");
+		Error.Set("Reader already open.");
 		return vlFalse;
 	}
 
 	if(!pReadOpenProc(this->pUserData))
 	{
-		LastError.Set("Error opening file.");
+		Error.Set("Error opening file.");
 		return vlFalse;
 	}
 
@@ -75,7 +75,7 @@ vlVoid CProcReader::Close()
 	}
 }
 
-vlSSize CProcReader::GetStreamSize() const
+vlSSize CProcReader::GetStreamSize(VTFLibError &Error) const
 {
 	if(!this->bOpened)
 	{
@@ -84,14 +84,14 @@ vlSSize CProcReader::GetStreamSize() const
 
 	if(pReadSizeProc == 0)
 	{
-		LastError.Set("pReadSizeProc not set.");
+		Error.Set("pReadSizeProc not set.");
 		return (std::numeric_limits<vlSSize>::max)();
 	}
 
 	return pReadSizeProc(this->pUserData);
 }
 
-vlSSize CProcReader::GetStreamPointer() const
+vlSSize CProcReader::GetStreamPointer(VTFLibError &Error) const
 {
 	if(!this->bOpened)
 	{
@@ -100,14 +100,14 @@ vlSSize CProcReader::GetStreamPointer() const
 
 	if(pReadTellProc == 0)
 	{
-		LastError.Set("pReadTellProc not set.");
+		Error.Set("pReadTellProc not set.", vlTrue);
 		return 0;
 	}
 
 	return pReadTellProc(this->pUserData);
 }
 
-vlSSize CProcReader::Seek(vlOffset lOffset, VLSeekMode uiMode)
+vlSSize CProcReader::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError &Error)
 {
 	if(!this->bOpened)
 	{
@@ -116,14 +116,14 @@ vlSSize CProcReader::Seek(vlOffset lOffset, VLSeekMode uiMode)
 
 	if(pReadSeekProc == 0)
 	{
-		LastError.Set("pReadSeekProc not set.");
+		Error.Set("pReadSeekProc not set.", vlTrue);
 		return 0;
 	}
 
 	return pReadSeekProc(lOffset, (VLSeekMode)uiMode, this->pUserData);
 }
 
-vlBool CProcReader::Read(vlChar &cChar)
+vlBool CProcReader::Read(vlChar &cChar, VTFLibError &Error)
 {
 	if(!this->bOpened)
 	{
@@ -132,7 +132,7 @@ vlBool CProcReader::Read(vlChar &cChar)
 
 	if(pReadReadProc == 0)
 	{
-		LastError.Set("pReadReadProc not set.");
+		Error.Set("pReadReadProc not set.", vlTrue);
 		return vlFalse;
 	}
 
@@ -140,13 +140,13 @@ vlBool CProcReader::Read(vlChar &cChar)
 
 	if(uiBytesRead == 0)
 	{
-		LastError.Set("pReadReadProc() failed.");
+		Error.Set("pReadReadProc() failed.", vlTrue);
 	}
 
 	return uiBytesRead == 1;
 }
 
-vlSize CProcReader::Read(vlVoid *vData, vlSize uiBytes)
+vlSize CProcReader::Read(vlVoid *vData, vlSize uiBytes, VTFLibError &Error)
 {
 	if(!this->bOpened)
 	{
@@ -155,7 +155,7 @@ vlSize CProcReader::Read(vlVoid *vData, vlSize uiBytes)
 
 	if(pReadReadProc == 0)
 	{
-		LastError.Set("pReadReadProc not set.");
+		Error.Set("pReadReadProc not set.", vlTrue);
 		return 0;
 	}
 
@@ -163,7 +163,7 @@ vlSize CProcReader::Read(vlVoid *vData, vlSize uiBytes)
 
 	if(uiBytesRead == 0)
 	{
-		LastError.Set("pReadReadProc() failed.");
+		Error.Set("pReadReadProc() failed.", vlTrue);
 	}
 
 	return uiBytesRead;

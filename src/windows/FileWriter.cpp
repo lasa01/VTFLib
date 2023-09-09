@@ -15,7 +15,7 @@
 using namespace VTFLib;
 using namespace VTFLib::IO::Writers;
 
-vlBool CFileWriter::Open()
+vlBool CFileWriter::Open(VTFLibError& Error)
 {
 	this->Close();
 
@@ -25,7 +25,7 @@ vlBool CFileWriter::Open()
 	{
 		this->hFile = NULL;
 
-		LastError.Set("Error opening file.", vlTrue);
+		Error.Set("Error opening file.", vlTrue);
 
 		return vlFalse;
 	}
@@ -42,7 +42,7 @@ vlVoid CFileWriter::Close()
 	}
 }
 
-vlSSize CFileWriter::GetStreamSize() const
+vlSSize CFileWriter::GetStreamSize(VTFLibError& Error) const
 {
 	if(this->hFile == NULL)
 	{
@@ -52,7 +52,7 @@ vlSSize CFileWriter::GetStreamSize() const
 	return GetFileSize(this->hFile, NULL);
 }
 
-vlSSize CFileWriter::GetStreamPointer() const
+vlSSize CFileWriter::GetStreamPointer(VTFLibError& Error) const
 {
 	if(this->hFile == NULL)
 	{
@@ -62,7 +62,7 @@ vlSSize CFileWriter::GetStreamPointer() const
 	return (vlSSize)SetFilePointer(this->hFile, 0, NULL, FILE_CURRENT);
 }
 
-vlSSize CFileWriter::Seek(vlOffset lOffset, VLSeekMode uiMode)
+vlSSize CFileWriter::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -72,7 +72,7 @@ vlSSize CFileWriter::Seek(vlOffset lOffset, VLSeekMode uiMode)
 	return (vlSSize)SetFilePointer(this->hFile, lOffset, NULL, (vlUInt)uiMode);
 }
 
-vlBool CFileWriter::Write(vlChar cChar)
+vlBool CFileWriter::Write(vlChar cChar, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -83,13 +83,13 @@ vlBool CFileWriter::Write(vlChar cChar)
 
 	if(!WriteFile(this->hFile, &cChar, 1, &ulBytesWritten, NULL))
 	{
-		LastError.Set("WriteFile() failed.", vlTrue);
+		Error.Set("WriteFile() failed.", vlTrue);
 	}
 
 	return ulBytesWritten == 1;
 }
 
-vlSize CFileWriter::Write(vlVoid *vData, vlSize uiBytes)
+vlSize CFileWriter::Write(vlVoid *vData, vlSize uiBytes, VTFLibError& Error)
 {
 	if(this->hFile == NULL)
 	{
@@ -100,7 +100,7 @@ vlSize CFileWriter::Write(vlVoid *vData, vlSize uiBytes)
 
 	if(!WriteFile(this->hFile, vData, uiBytes, &ulBytesWritten, NULL))
 	{
-		LastError.Set("WriteFile() failed.", vlTrue);
+		Error.Set("WriteFile() failed.", vlTrue);
 	}
 
 	return (vlSize)ulBytesWritten;
