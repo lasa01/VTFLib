@@ -1,11 +1,12 @@
-VTFLib
+VTFLib 2
 ======
 
-This is a Linux port of [VTFLib](http://nemesis.thewavelength.net/index.php?c=149).
+This is a cross-platform, multithreading supporting version of the Linux port of [VTFLib](http://nemesis.thewavelength.net/index.php?c=149).
+
+The original C API is changed to use pointers instead of globals to support multithreading.
 
 ### Setup
 
-	git clone https://github.com/panzi/VTFLib.git
 	mkdir VTFLib/build
 	cd VTFLib/build
 	cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
@@ -32,18 +33,6 @@ However, all read-only features are supported.
 
  * [libtxc\_dxtn](http://cgit.freedesktop.org/~mareko/libtxc_dxtn/) for writing S3TC
    compressed textures (optional).
-
-### Documentation
-
-[Doxygen API Reference](http://panzi.github.io/VTFLib/)
-
-### Projects Using VTFLib for Linux
-
- * [pixbufloader-vtf](https://github.com/panzi/pixbufloader-vtf) - load VTF files in
-   Gtk+ applications
- * [qvtf](https://github.com/panzi/qvtf) - load VTF files in Qt applications
- * [KIO Thumbnail VTF Plugin](https://github.com/panzi/KIO-VTF-Thumb-Creator) - show
-   thumbnails for VTF files in KDE
 
 ### License
 
