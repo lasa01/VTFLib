@@ -19,12 +19,6 @@ namespace VTFLib
 {
 	vlBool bInitialized = vlFalse;
 
-	CVTFFile *Image = 0;
-	CImageVector *ImageVector = 0;
-
-	CVMTFile *Material = 0;
-	CMaterialVector *MaterialVector = 0;
-
 	vlUInt uiDXTQuality = DXT_QUALITY_HIGH;
 
 	vlSingle sLuminanceWeightR = 0.299f;
@@ -69,65 +63,6 @@ VTFLIB_API vlUInt vlGetVersion()
 VTFLIB_API const vlChar *vlGetVersionString()
 {
 	return VL_VERSION_STRING;
-}
-
-//
-// vlInitialize()
-// Initializes all resources.
-//
-VTFLIB_API vlBool vlInitialize(VTFLibError **Error)
-{
-	if(bInitialized)
-	{
-		if (Error != 0)
-		{
-			auto* NewError = new VTFLibError();
-			NewError->Set("VTFLib already initialized.");
-			*Error = NewError;
-		}
-
-		return vlFalse;
-	}
-
-	bInitialized = vlTrue;
-
-	ImageVector = new CImageVector();
-	MaterialVector = new CMaterialVector();
-
-	return vlTrue;
-}
-
-//
-// vlShutdown()
-// Frees all resources.
-//
-VTFLIB_API vlVoid vlShutdown()
-{
-	if(!bInitialized)
-		return;
-
-	vlUInt i;
-
-	bInitialized = vlFalse;
-
-	Image = 0;
-	Material = 0;
-
-	for(i = 0; i < ImageVector->size(); i++)
-	{
-		delete (*ImageVector)[i];
-	}
-
-	delete ImageVector;
-	ImageVector = 0;
-
-	for(i = 0; i < MaterialVector->size(); i++)
-	{
-		delete (*MaterialVector)[i];
-	}
-
-	delete MaterialVector;
-	MaterialVector = 0;
 }
 
 VTFLIB_API vlBool vlGetBoolean(VTFLibOption Option)

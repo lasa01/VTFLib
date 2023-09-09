@@ -18,9 +18,7 @@ using namespace VTFLib;
 struct LibCallbacks {
 	LibCallbacks() {}
 
-	~LibCallbacks() {
-		vlShutdown();
-	}
+	~LibCallbacks() {}
 };
 
 // gcc actually calls constructors and destructors of global objects in libraries

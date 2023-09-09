@@ -22,14 +22,12 @@ extern "C" {
 #endif
 
 //
-// Memory managment routines.
+// Creation and disposal
 //
 
-VTFLIB_API vlBool vlImageIsBound(VTFLibError* Error);
-VTFLIB_API vlBool vlBindImage(vlUInt uiImage, VTFLibError* Error);
+VTFLIB_API VTFLibVTFFile* vlCreateVTFFile();
+VTFLIB_API vlVoid vlDestroyVTFFile(VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlBool vlCreateImage(vlUInt *uiImage, VTFLibError* Error);
-VTFLIB_API vlVoid vlDeleteImage(vlUInt uiImage);
 
 //
 // Library routines.  (Basically class wrappers.)
@@ -37,101 +35,100 @@ VTFLIB_API vlVoid vlDeleteImage(vlUInt uiImage);
 
 VTFLIB_API vlVoid vlImageCreateDefaultCreateStructure(SVTFCreateOptions *VTFCreateOptions);
 
-VTFLIB_API vlBool vlImageCreate(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, VTFImageFormat ImageFormat, vlBool bThumbnail, vlBool bMipmaps, vlBool bNullImageData, VTFLibError* Error);
-VTFLIB_API vlBool vlImageCreateSingle(vlUInt uiWidth, vlUInt uiHeight, vlByte *lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions, VTFLibError* Error);
-VTFLIB_API vlBool vlImageCreateMultiple(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, vlByte **lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions, VTFLibError* Error);
-VTFLIB_API vlVoid vlImageDestroy();
+VTFLIB_API vlBool vlImageCreate(VTFLibVTFFile* VTFFile, vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, VTFImageFormat ImageFormat, vlBool bThumbnail, vlBool bMipmaps, vlBool bNullImageData, VTFLibError* Error);
+VTFLIB_API vlBool vlImageCreateSingle(VTFLibVTFFile* VTFFile, vlUInt uiWidth, vlUInt uiHeight, vlByte *lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions, VTFLibError* Error);
+VTFLIB_API vlBool vlImageCreateMultiple(VTFLibVTFFile* VTFFile, vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, vlByte **lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions, VTFLibError* Error);
 
-VTFLIB_API vlBool vlImageIsLoaded(VTFLibError* Error);
+VTFLIB_API vlBool vlImageIsLoaded(const VTFLibVTFFile* VTFFile, VTFLibError* Error);
 
-VTFLIB_API vlBool vlImageLoad(const vlChar *cFileName, vlBool bHeaderOnly, VTFLibError* Error);
-VTFLIB_API vlBool vlImageLoadLump(const vlVoid *lpData, vlSize uiBufferSize, vlBool bHeaderOnly, VTFLibError* Error);
-VTFLIB_API vlBool vlImageLoadProc(vlVoid *pUserData, vlBool bHeaderOnly, VTFLibError* Error);
+VTFLIB_API vlBool vlImageLoad(VTFLibVTFFile* VTFFile, const vlChar *cFileName, vlBool bHeaderOnly, VTFLibError* Error);
+VTFLIB_API vlBool vlImageLoadLump(VTFLibVTFFile* VTFFile, const vlVoid *lpData, vlSize uiBufferSize, vlBool bHeaderOnly, VTFLibError* Error);
+VTFLIB_API vlBool vlImageLoadProc(VTFLibVTFFile* VTFFile, vlVoid *pUserData, vlBool bHeaderOnly, VTFLibError* Error);
 
-VTFLIB_API vlBool vlImageSave(const vlChar *cFileName, VTFLibError* Error);
-VTFLIB_API vlBool vlImageSaveLump(vlVoid *lpData, vlSize uiBufferSize, vlSize *uiSize, VTFLibError* Error);
-VTFLIB_API vlBool vlImageSaveProc(vlVoid *pUserData, VTFLibError* Error);
+VTFLIB_API vlBool vlImageSave(const VTFLibVTFFile* VTFFile, const vlChar *cFileName, VTFLibError* Error);
+VTFLIB_API vlBool vlImageSaveLump(const VTFLibVTFFile* VTFFile, vlVoid *lpData, vlSize uiBufferSize, vlSize *uiSize, VTFLibError* Error);
+VTFLIB_API vlBool vlImageSaveProc(const VTFLibVTFFile* VTFFile, vlVoid *pUserData, VTFLibError* Error);
 
 //
 // Image routines.
 //
 
-VTFLIB_API vlUInt vlImageGetHasImage();
+VTFLIB_API vlUInt vlImageGetHasImage(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlUInt vlImageGetMajorVersion();
-VTFLIB_API vlUInt vlImageGetMinorVersion();
-VTFLIB_API vlUInt vlImageGetSize();
+VTFLIB_API vlUInt vlImageGetMajorVersion(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlUInt vlImageGetMinorVersion(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlUInt vlImageGetSize(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlUInt vlImageGetWidth();
-VTFLIB_API vlUInt vlImageGetHeight();
-VTFLIB_API vlUInt vlImageGetDepth();
+VTFLIB_API vlUInt vlImageGetWidth(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlUInt vlImageGetHeight(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlUInt vlImageGetDepth(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlUInt vlImageGetFrameCount();
-VTFLIB_API vlUInt vlImageGetFaceCount();
-VTFLIB_API vlUInt vlImageGetMipmapCount();
+VTFLIB_API vlUInt vlImageGetFrameCount(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlUInt vlImageGetFaceCount(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlUInt vlImageGetMipmapCount(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlUInt vlImageGetStartFrame();
-VTFLIB_API vlVoid vlImageSetStartFrame(vlUInt uiStartFrame);
+VTFLIB_API vlUInt vlImageGetStartFrame(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlVoid vlImageSetStartFrame(VTFLibVTFFile* VTFFile, vlUInt uiStartFrame);
 
-VTFLIB_API vlUInt vlImageGetFlags();
-VTFLIB_API vlVoid vlImageSetFlags(vlUInt uiFlags);
+VTFLIB_API vlUInt vlImageGetFlags(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlVoid vlImageSetFlags(VTFLibVTFFile* VTFFile, vlUInt uiFlags);
 
-VTFLIB_API vlBool vlImageGetFlag(VTFImageFlag ImageFlag);
-VTFLIB_API vlVoid vlImageSetFlag(VTFImageFlag ImageFlag, vlBool bState);
+VTFLIB_API vlBool vlImageGetFlag(const VTFLibVTFFile* VTFFile, VTFImageFlag ImageFlag);
+VTFLIB_API vlVoid vlImageSetFlag(VTFLibVTFFile* VTFFile, VTFImageFlag ImageFlag, vlBool bState);
 
-VTFLIB_API vlSingle vlImageGetBumpmapScale();
-VTFLIB_API vlVoid vlImageSetBumpmapScale(vlSingle sBumpmapScale);
+VTFLIB_API vlSingle vlImageGetBumpmapScale(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlVoid vlImageSetBumpmapScale(VTFLibVTFFile* VTFFile, vlSingle sBumpmapScale);
 
-VTFLIB_API vlVoid vlImageGetReflectivity(vlSingle *sX, vlSingle *sY, vlSingle *sZ);
-VTFLIB_API vlVoid vlImageSetReflectivity(vlSingle sX, vlSingle sY, vlSingle sZ);
+VTFLIB_API vlVoid vlImageGetReflectivity(const VTFLibVTFFile* VTFFile, vlSingle *sX, vlSingle *sY, vlSingle *sZ);
+VTFLIB_API vlVoid vlImageSetReflectivity(VTFLibVTFFile* VTFFile, vlSingle sX, vlSingle sY, vlSingle sZ);
 
-VTFLIB_API VTFImageFormat vlImageGetFormat();
+VTFLIB_API VTFImageFormat vlImageGetFormat(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlByte *vlImageGetData(vlUInt uiFrame, vlUInt uiFace, vlUInt uiSlice, vlUInt uiMipmapLevel);
-VTFLIB_API vlVoid vlImageSetData(vlUInt uiFrame, vlUInt uiFace, vlUInt uiSlice, vlUInt uiMipmapLevel, vlByte *lpData);
+VTFLIB_API vlByte *vlImageGetData(const VTFLibVTFFile* VTFFile, vlUInt uiFrame, vlUInt uiFace, vlUInt uiSlice, vlUInt uiMipmapLevel);
+VTFLIB_API vlVoid vlImageSetData(VTFLibVTFFile* VTFFile, vlUInt uiFrame, vlUInt uiFace, vlUInt uiSlice, vlUInt uiMipmapLevel, vlByte *lpData);
 
 //
 // Thumbnail routines.
 //
 
-VTFLIB_API vlBool vlImageGetHasThumbnail();
+VTFLIB_API vlBool vlImageGetHasThumbnail(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlUInt vlImageGetThumbnailWidth();
-VTFLIB_API vlUInt vlImageGetThumbnailHeight();
+VTFLIB_API vlUInt vlImageGetThumbnailWidth(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlUInt vlImageGetThumbnailHeight(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API VTFImageFormat vlImageGetThumbnailFormat();
+VTFLIB_API VTFImageFormat vlImageGetThumbnailFormat(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlByte *vlImageGetThumbnailData();
-VTFLIB_API vlVoid vlImageSetThumbnailData(vlByte *lpData);
+VTFLIB_API vlByte *vlImageGetThumbnailData(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlVoid vlImageSetThumbnailData(VTFLibVTFFile* VTFFile, vlByte *lpData);
 
 //
 // Resource routines.
 //
 
-VTFLIB_API vlBool vlImageGetSupportsResources();
+VTFLIB_API vlBool vlImageGetSupportsResources(const VTFLibVTFFile* VTFFile);
 
-VTFLIB_API vlUInt vlImageGetResourceCount();
-VTFLIB_API vlUInt vlImageGetResourceType(vlUInt uiIndex);
-VTFLIB_API vlBool vlImageGetHasResource(vlUInt uiType);
+VTFLIB_API vlUInt vlImageGetResourceCount(const VTFLibVTFFile* VTFFile);
+VTFLIB_API vlUInt vlImageGetResourceType(const VTFLibVTFFile* VTFFile, vlUInt uiIndex);
+VTFLIB_API vlBool vlImageGetHasResource(const VTFLibVTFFile* VTFFile, vlUInt uiType);
 
-VTFLIB_API vlVoid *vlImageGetResourceData(vlUInt uiType, vlUInt *uiSize, VTFLibError* Error);
-VTFLIB_API vlVoid *vlImageSetResourceData(vlUInt uiType, vlUInt uiSize, vlVoid *lpData, VTFLibError* Error);
+VTFLIB_API vlVoid *vlImageGetResourceData(const VTFLibVTFFile* VTFFile, vlUInt uiType, vlUInt *uiSize, VTFLibError* Error);
+VTFLIB_API vlVoid *vlImageSetResourceData(VTFLibVTFFile* VTFFile, vlUInt uiType, vlUInt uiSize, vlVoid *lpData, VTFLibError* Error);
 
 //
 // Helper routines.
 //
 
-VTFLIB_API vlBool vlImageGenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error);
-VTFLIB_API vlBool vlImageGenerateAllMipmaps(VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error);
+VTFLIB_API vlBool vlImageGenerateMipmaps(VTFLibVTFFile* VTFFile, vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error);
+VTFLIB_API vlBool vlImageGenerateAllMipmaps(VTFLibVTFFile* VTFFile, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error);
 
-VTFLIB_API vlBool vlImageGenerateThumbnail(VTFLibError** Error);
+VTFLIB_API vlBool vlImageGenerateThumbnail(VTFLibVTFFile* VTFFile, VTFLibError** Error);
 
-VTFLIB_API vlBool vlImageGenerateNormalMap(vlUInt uiFrame, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, VTFLibError* Error);
-VTFLIB_API vlBool vlImageGenerateAllNormalMaps(VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, VTFLibError* Error);
+VTFLIB_API vlBool vlImageGenerateNormalMap(VTFLibVTFFile* VTFFile, vlUInt uiFrame, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, VTFLibError* Error);
+VTFLIB_API vlBool vlImageGenerateAllNormalMaps(VTFLibVTFFile* VTFFile, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, VTFLibError* Error);
 
-VTFLIB_API vlBool vlImageGenerateSphereMap(VTFLibError* Error);
+VTFLIB_API vlBool vlImageGenerateSphereMap(VTFLibVTFFile* VTFFile, VTFLibError* Error);
 
-VTFLIB_API vlBool vlImageComputeReflectivity(VTFLibError* Error);
+VTFLIB_API vlBool vlImageComputeReflectivity(VTFLibVTFFile* VTFFile, VTFLibError* Error);
 
 //
 // Conversion routines.

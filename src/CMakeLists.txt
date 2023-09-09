@@ -17,7 +17,6 @@ set(vtflib_SRCS
 	VMTSingleNode.cpp
 	VMTStringNode.cpp
 	VMTValueNode.cpp
-	VMTWrapper.cpp
 	VTFFile.cpp
 	VTFLib.cpp
 	VTFMathlib.cpp
@@ -45,7 +44,6 @@ set(vtflib_HDRS
 	VMTSingleNode.h
 	VMTStringNode.h
 	VMTValueNode.h
-	VMTWrapper.h
 	VTFDXTn.h
 	VTFFile.h
 	VTFFormat.h

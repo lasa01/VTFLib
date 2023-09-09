@@ -110,17 +110,6 @@
 
 namespace VTFLib
 {
-	typedef std::vector<VTFLib::CVTFFile *> CImageVector;
-	typedef std::vector<VTFLib::CVMTFile *> CMaterialVector;
-
-	extern vlBool bInitialized;
-
-	extern CVTFFile *Image;
-	extern CImageVector *ImageVector;
-
-	extern CVMTFile *Material;
-	extern CMaterialVector *MaterialVector;
-
 	extern vlUInt uiDXTQuality;
 
 	extern vlSingle sLuminanceWeightR;
@@ -197,12 +186,6 @@ VTFLIB_API vlUInt vlGetVersion();
 
 //! Return the VTFLib version as a string.
 VTFLIB_API const vlChar *vlGetVersionString();
-
-//! Initialisation function
-VTFLIB_API vlBool vlInitialize(VTFLibError **Error);
-
-//! Shutdown function
-VTFLIB_API vlVoid vlShutdown();
 
 //! Return the specified option.
 VTFLIB_API vlBool vlGetBoolean(VTFLibOption Option);
