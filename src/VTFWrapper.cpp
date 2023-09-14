@@ -28,6 +28,21 @@ VTFLIB_API vlVoid vlDestroyVTFFile(VTFLibVTFFile *VTFFile)
     delete VTFFile;
 }
 
+VTFLIB_API VTFLibError *vlCreateVTFLibError()
+{
+    return new VTFLibError();
+}
+
+VTFLIB_API vlVoid vlDestroyVTFLibError(VTFLibError *VTFLibError)
+{
+    delete VTFLibError;
+}
+
+VTFLIB_API const vlChar *vlGetErrorMessage(VTFLibError *VTFLibError)
+{
+    return VTFLibError->Get();
+}
+
 VTFLIB_API vlVoid vlImageCreateDefaultCreateStructure(SVTFCreateOptions *VTFCreateOptions)
 {
 	VTFCreateOptions->uiVersion[0] = VTF_MAJOR_VERSION;

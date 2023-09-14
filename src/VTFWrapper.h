@@ -22,12 +22,19 @@ extern "C" {
 #endif
 
 //
-// Creation and disposal
+// Creation and disposal.
 //
 
 VTFLIB_API VTFLibVTFFile* vlCreateVTFFile();
 VTFLIB_API vlVoid vlDestroyVTFFile(VTFLibVTFFile* VTFFile);
+VTFLIB_API VTFLibError* vlCreateVTFLibError();
+VTFLIB_API vlVoid vlDestroyVTFLibError(VTFLibError* VTFLibError);
 
+//
+// Error handling.
+//
+
+VTFLIB_API const vlChar *vlGetErrorMessage(VTFLibError* VTFLibError);
 
 //
 // Library routines.  (Basically class wrappers.)
