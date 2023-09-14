@@ -128,7 +128,7 @@ VTFLIB_API vlVoid *vlImageSetResourceData(VTFLibVTFFile* VTFFile, vlUInt uiType,
 VTFLIB_API vlBool vlImageGenerateMipmaps(VTFLibVTFFile* VTFFile, vlUInt uiFace, vlUInt uiFrame, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error);
 VTFLIB_API vlBool vlImageGenerateAllMipmaps(VTFLibVTFFile* VTFFile, VTFMipmapFilter MipmapFilter, VTFSharpenFilter SharpenFilter, VTFLibError* Error);
 
-VTFLIB_API vlBool vlImageGenerateThumbnail(VTFLibVTFFile* VTFFile, VTFLibError** Error);
+VTFLIB_API vlBool vlImageGenerateThumbnail(VTFLibVTFFile* VTFFile, VTFLibError* Error);
 
 VTFLIB_API vlBool vlImageGenerateNormalMap(VTFLibVTFFile* VTFFile, vlUInt uiFrame, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, VTFLibError* Error);
 VTFLIB_API vlBool vlImageGenerateAllNormalMaps(VTFLibVTFFile* VTFFile, VTFKernelFilter KernelFilter, VTFHeightConversionMethod HeightConversionMethod, VTFNormalAlphaResult NormalAlphaResult, VTFLibError* Error);
