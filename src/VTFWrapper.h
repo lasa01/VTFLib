@@ -34,7 +34,7 @@ VTFLIB_API vlVoid vlDestroyVTFLibError(VTFLibError* VTFLibError);
 // Error handling.
 //
 
-VTFLIB_API const vlChar *vlGetErrorMessage(VTFLibError* VTFLibError);
+VTFLIB_API const vlChar *vlGetErrorMessage(const VTFLibError* VTFLibError);
 
 //
 // Library routines.  (Basically class wrappers.)
@@ -46,7 +46,7 @@ VTFLIB_API vlBool vlImageCreate(VTFLibVTFFile* VTFFile, vlUInt uiWidth, vlUInt u
 VTFLIB_API vlBool vlImageCreateSingle(VTFLibVTFFile* VTFFile, vlUInt uiWidth, vlUInt uiHeight, vlByte *lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions, VTFLibError* Error);
 VTFLIB_API vlBool vlImageCreateMultiple(VTFLibVTFFile* VTFFile, vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt uiFaces, vlUInt uiSlices, vlByte **lpImageDataRGBA8888, SVTFCreateOptions *VTFCreateOptions, VTFLibError* Error);
 
-VTFLIB_API vlBool vlImageIsLoaded(const VTFLibVTFFile* VTFFile, VTFLibError* Error);
+VTFLIB_API vlBool vlImageIsLoaded(const VTFLibVTFFile* VTFFile);
 
 VTFLIB_API vlBool vlImageLoad(VTFLibVTFFile* VTFFile, const vlChar *cFileName, vlBool bHeaderOnly, VTFLibError* Error);
 VTFLIB_API vlBool vlImageLoadLump(VTFLibVTFFile* VTFFile, const vlVoid *lpData, vlSize uiBufferSize, vlBool bHeaderOnly, VTFLibError* Error);

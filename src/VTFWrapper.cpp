@@ -38,7 +38,7 @@ VTFLIB_API vlVoid vlDestroyVTFLibError(VTFLibError *VTFLibError)
     delete VTFLibError;
 }
 
-VTFLIB_API const vlChar *vlGetErrorMessage(VTFLibError *VTFLibError)
+VTFLIB_API const vlChar *vlGetErrorMessage(const VTFLibError *VTFLibError)
 {
     return VTFLibError->Get();
 }
@@ -107,7 +107,7 @@ VTFLIB_API vlBool vlImageCreateMultiple(VTFLibVTFFile* VTFFile, vlUInt uiWidth, 
 	return VTFFile->Create(uiWidth, uiHeight, uiFrames, uiFaces, uiSlices, lpImageDataRGBA8888, *VTFCreateOptions, *Error);
 }
 
-VTFLIB_API vlBool vlImageIsLoaded(const VTFLibVTFFile* VTFFile, VTFLibError* Error)
+VTFLIB_API vlBool vlImageIsLoaded(const VTFLibVTFFile* VTFFile)
 {
 	return VTFFile->IsLoaded();
 }
