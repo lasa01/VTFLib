@@ -3613,7 +3613,7 @@ vlVoid FromBlueScreen(vlUInt16& R, vlUInt16& G, vlUInt16& B, vlUInt16& A)
 	}
 }
 
-vlSingle sHDRLogAverageLuminance;
+thread_local vlSingle sHDRLogAverageLuminance;
 
 vlVoid ToFP16(vlUInt16& R, vlUInt16& G, vlUInt16& B, vlUInt16& A)
 {
