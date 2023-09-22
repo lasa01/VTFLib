@@ -56,7 +56,7 @@ vlVoid CMemoryReader::Close()
 	this->bOpened = vlFalse;
 }
 
-vlSSize CMemoryReader::GetStreamSize(VTFLibError &Error) const
+vlSSize CMemoryReader::GetStreamSize(VTFLibError &) const
 {
 	if(!this->bOpened)
 	{
@@ -66,7 +66,7 @@ vlSSize CMemoryReader::GetStreamSize(VTFLibError &Error) const
 	return this->uiBufferSize;
 }
 
-vlSSize CMemoryReader::GetStreamPointer(VTFLibError &Error) const
+vlSSize CMemoryReader::GetStreamPointer(VTFLibError &) const
 {
 	if(!this->bOpened)
 	{
@@ -76,7 +76,7 @@ vlSSize CMemoryReader::GetStreamPointer(VTFLibError &Error) const
 	return this->uiPointer;
 }
 
-vlSSize CMemoryReader::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError &Error)
+vlSSize CMemoryReader::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError &)
 {
 	if(!this->bOpened)
 	{

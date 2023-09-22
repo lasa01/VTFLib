@@ -59,7 +59,7 @@ vlVoid CMemoryWriter::Close()
 	this->bOpened = vlFalse;
 }
 
-vlSSize CMemoryWriter::GetStreamSize(VTFLibError &Error) const
+vlSSize CMemoryWriter::GetStreamSize(VTFLibError &) const
 {
 	/*if(!this->bOpened)
 	{
@@ -69,7 +69,7 @@ vlSSize CMemoryWriter::GetStreamSize(VTFLibError &Error) const
 	return this->uiLength;
 }
 
-vlSSize CMemoryWriter::GetStreamPointer(VTFLibError &Error) const
+vlSSize CMemoryWriter::GetStreamPointer(VTFLibError &) const
 {
 	if(!this->bOpened)
 	{
@@ -79,7 +79,7 @@ vlSSize CMemoryWriter::GetStreamPointer(VTFLibError &Error) const
 	return this->uiPointer;
 }
 
-vlSSize CMemoryWriter::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError &Error)
+vlSSize CMemoryWriter::Seek(vlOffset lOffset, VLSeekMode uiMode, VTFLibError &)
 {
 	if(!this->bOpened)
 	{
