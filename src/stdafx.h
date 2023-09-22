@@ -50,6 +50,16 @@
 #	define VTFLIB_PRINTF(FMT,ARGS) __attribute__((format(printf, FMT, ARGS)))
 #endif
 
+#if HAS_CXX11_THREAD_LOCAL
+    #define ATTRIBUTE_TLS thread_local
+#elif defined (__GNUC__)
+    #define ATTRIBUTE_TLS __thread
+#elif defined (_MSC_VER)
+    #define ATTRIBUTE_TLS __declspec(thread)
+#else // !C++11 && !__GNUC__ && !_MSC_VER
+    #error "Define a thread local storage qualifier for your compiler/platform!"
+#endif
+
 // Custom data types
 typedef unsigned char	vlBool;				//!< Boolean value 0/1.
 typedef char			vlChar;				//!< Single signed character.
