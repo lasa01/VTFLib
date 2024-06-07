@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5)
 
 project(VTFLib)
 
@@ -12,7 +12,7 @@ set(VTFLIB_VERSION ${VTFLIB_MAJOR_VERSION}.${VTFLIB_MINOR_VERSION}.${VTFLIB_PATC
 # ---- options ----------------------------------------------------------------
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
-option(USE_NVDXT "(Windows only) VTF creation requires a S3TC implementation.
+option(USE_NVDXT "No longer supported! (Windows only) VTF creation requires a S3TC implementation.
 For this nvDXTLib can be used and has been tested with version 8.31.1127.1645, availible here:
 http://developer.nvidia.com/object/dds_utilities_legacy.html" OFF)
 
@@ -22,28 +22,20 @@ http://cgit.freedesktop.org/~mareko/libtxc_dxtn/" ON)
 
 option(BUILD_DOCS "Build doxygen documentation" OFF)
 
-if(USE_NVDXT AND USE_LIBTXC_DXTN)
-	message(FATAL_ERROR "Cannot use both options USE_NVDXT and USE_LIBTXC_DXTN at once.")
+if(USE_NVDXT)
+	message(FATAL_ERROR "USE_NVDXT is not longer supported.")
 endif()
 
 # ---- dependencies -----------------------------------------------------------
-if(USE_LIBTXC_DXTN)
-	find_path(GL_INCLUDE_DIR GL/gl.h)
-	find_library(LIBTXC_DXTN_LIBRARY txc_dxtn)
+find_path(GL_INCLUDE_DIR GL/gl.h)
 
-	if(NOT(GL_INCLUDE_DIR))
-		message(FATAL_ERROR "GL/gl.h not found!
+if(NOT(GL_INCLUDE_DIR))
+    message(FATAL_ERROR "GL/gl.h not found!
 Please re-run with -DUSE_LIBTXC_DXTN=OFF if you don't want S3TC support.")
-	endif()
-
-	if(NOT(LIBTXC_DXTN_LIBRARY))
-		message(FATAL_ERROR "libtxc_dxtn not found!
-Please re-run with -DUSE_LIBTXC_DXTN=OFF if you don't want S3TC support.")
-	endif()
-
-	add_definitions(-DUSE_LIBTXC_DXTN)
-	include_directories(${GL_INCLUDE_DIR})
 endif()
+
+add_definitions(-DUSE_LIBTXC_DXTN)
+include_directories(${GL_INCLUDE_DIR})
 
 # ---- compiler flags ---------------------------------------------------------
 if(MSVC)
