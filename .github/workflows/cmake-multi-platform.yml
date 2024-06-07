@@ -35,6 +35,8 @@ jobs:
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DUSE_LIBTXC_DXTN=OFF
+        -DUSE_NVDXT=OFF
         -S ${{ github.workspace }}
 
     - name: Build
