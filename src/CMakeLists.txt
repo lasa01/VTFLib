@@ -20,7 +20,10 @@ set(vtflib_SRCS
 	VTFFile.cpp
 	VTFLib.cpp
 	VTFMathlib.cpp
-	VTFWrapper.cpp)
+	VTFWrapper.cpp
+	txc_compress_dxtn.c
+	txc_fetch_dxtn.c
+	)
 
 set(vtflib_HDRS
 	Error.h
@@ -64,13 +67,13 @@ else()
 	add_subdirectory(unix)
 endif()
 
-add_compiler_export_flags()
 add_library(${VTFLIB_NAME}
-	${vtflib_SRCS}
-	${vtflib_OS_SRCS}
-	${vtflib_HDRS}
-	"${CMAKE_CURRENT_BINARY_DIR}/Resource.rc")
+		${vtflib_SRCS}
+		${vtflib_OS_SRCS}
+		${vtflib_HDRS}
+		"${CMAKE_CURRENT_BINARY_DIR}/Resource.rc")
 
+set_target_properties(${VTFLIB_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(USE_LIBTXC_DXTN)
 	target_link_libraries(${VTFLIB_NAME} ${LIBTXC_DXTN_LIBRARY})
 endif()
