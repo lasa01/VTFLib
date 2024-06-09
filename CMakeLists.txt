@@ -27,12 +27,6 @@ if(USE_NVDXT)
 endif()
 
 # ---- dependencies -----------------------------------------------------------
-find_path(GL_INCLUDE_DIR GL/gl.h)
-
-if(NOT(GL_INCLUDE_DIR))
-    message(FATAL_ERROR "GL/gl.h not found!
-Please re-run with -DUSE_LIBTXC_DXTN=OFF if you don't want S3TC support.")
-endif()
 
 add_definitions(-DUSE_LIBTXC_DXTN)
 include_directories(${GL_INCLUDE_DIR})
