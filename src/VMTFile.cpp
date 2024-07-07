@@ -77,10 +77,10 @@ vlBool CVMTFile::Load(vlVoid *pUserData)
 	return this->Load(&reader);
 }
 
-vlBool CVMTFile::Save(const vlChar *cFileName) const
+vlBool CVMTFile::Save(const vlChar *cFileName, VTFLib::Diagnostics::CError& Error) const
 {
 	IO::Writers::CFileWriter writer(cFileName);
-	return this->Save(&writer);
+	return this->Save(&writer, Error);
 }
 
 vlBool CVMTFile::Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize, VTFLib::Diagnostics::CError& Error) const
@@ -89,17 +89,17 @@ vlBool CVMTFile::Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize, VTFLi
 
 	IO::Writers::CMemoryWriter MemoryWriter = IO::Writers::CMemoryWriter(lpData, uiBufferSize);
 
-	vlBool bResult = this->Save(&MemoryWriter);
+	vlBool bResult = this->Save(&MemoryWriter, Error);
 
 	uiSize = MemoryWriter.GetStreamSize(Error);
 
 	return bResult;
 }
 
-vlBool CVMTFile::Save(vlVoid *pUserData) const
+vlBool CVMTFile::Save(vlVoid *pUserData, VTFLib::Diagnostics::CError& Error) const
 {
 	IO::Writers::CProcWriter writer(pUserData);
-	return this->Save(&writer);
+	return this->Save(&writer, Error);
 }
 
 enum EToken
