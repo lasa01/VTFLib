@@ -58,9 +58,9 @@ namespace VTFLib
 
 		vlBool IsLoaded() const;
 
-		vlBool Load(const vlChar *cFileName);
-		vlBool Load(const vlVoid *lpData, vlSize uiBufferSize);
-		vlBool Load(vlVoid *pUserData);
+		vlBool Load(const vlChar *cFileName, VTFLib::Diagnostics::CError& Error);
+		vlBool Load(const vlVoid *lpData, vlSize uiBufferSize, VTFLib::Diagnostics::CError& Error);
+		vlBool Load(vlVoid *pUserData, VTFLib::Diagnostics::CError& Error);
 
 		vlBool Save(const vlChar *cFileName, VTFLib::Diagnostics::CError& Error) const;
 		vlBool Save(vlVoid *lpData, vlSize uiBufferSize, vlSize &uiSize, VTFLib::Diagnostics::CError& Error) const;

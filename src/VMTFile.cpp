@@ -59,22 +59,22 @@ vlBool CVMTFile::IsLoaded() const
 	return this->Root != 0;
 }
 
-vlBool CVMTFile::Load(const vlChar *cFileName)
+vlBool CVMTFile::Load(const vlChar *cFileName, VTFLib::Diagnostics::CError& Error)
 {
 	IO::Readers::CFileReader reader(cFileName);
-	return this->Load(&reader );
+	return this->Load(&reader, Error);
 }
 
-vlBool CVMTFile::Load(const vlVoid *lpData, vlSize uiBufferSize)
+vlBool CVMTFile::Load(const vlVoid *lpData, vlSize uiBufferSize, VTFLib::Diagnostics::CError& Error)
 {
 	IO::Readers::CMemoryReader reader(lpData, uiBufferSize);
-	return this->Load(&reader );
+	return this->Load(&reader, Error);
 }
 
-vlBool CVMTFile::Load(vlVoid *pUserData)
+vlBool CVMTFile::Load(vlVoid *pUserData, VTFLib::Diagnostics::CError& Error)
 {
 	IO::Readers::CProcReader reader(pUserData);
-	return this->Load(&reader);
+	return this->Load(&reader, Error);
 }
 
 vlBool CVMTFile::Save(const vlChar *cFileName, VTFLib::Diagnostics::CError& Error) const
