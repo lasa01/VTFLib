@@ -71,6 +71,6 @@ void tx_compress_dxtn(GLint srccomps, GLint width, GLint height,
                       GLubyte *dest, GLint dstRowStride);
 
 #ifdef __cplusplus
-};
+}
 #endif
 #endif /* _TXC_DXTN_H */
