@@ -818,8 +818,8 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 
 			auto intermediate_format = is_float ? VTFImageFormat::IMAGE_FORMAT_RGBA32323232F
 												: VTFImageFormat::IMAGE_FORMAT_RGBA8888;
-			for (auto face = 0; face < face_count; ++face) {
-				for (auto frame = 0; frame < frame_count; ++frame) {
+			for (vlUInt face = 0u; face < face_count; ++face) {
+				for (vlUInt frame = 0u; frame < frame_count; ++frame) {
 					auto orig_data = GetData(frame, face, 0, 0);
 					auto rgba_buffer = std::vector<uint8_t >(VTFLib::CVTFFile::ComputeImageSize(width, height, 1,
 																								intermediate_format));
@@ -829,7 +829,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 						return vlFalse;
 					}
 #undef max
-					for (auto mip = 1; mip < mip_count; ++mip) {
+					for (vlUInt mip = 1u; mip < mip_count; ++mip) {
 						uint32_t mip_width = std::max(1u, width>>mip);
 						uint32_t mip_height = std::max(1u, height>>mip);
 						auto resized_buffer = (uint8_t *) stbir_resize(
@@ -4122,7 +4122,8 @@ vlBool CVTFFile::Resize(const vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, 
 
 	return nvDXTCompressWrapper(lpSourceRGBA8888, uiSourceWidth, uiSourceHeight, &Options, NVWriteCallback);
 #else
-
+    (void)(SharpenFilter);
+    (void)(Error);
 	stbir_resize((void *) lpSourceRGBA8888, (int)uiSourceWidth, (int)uiSourceHeight, (int)uiSourceWidth * 4, lpDestRGBA8888,
 				 (int)uiDestWidth, (int)uiDestHeight, (int)uiDestWidth * 4, stbir_pixel_layout::STBIR_RGBA,
 				 stbir_datatype::STBIR_TYPE_UINT8_SRGB_ALPHA, stbir_edge::STBIR_EDGE_CLAMP, remapFilter(ResizeFilter));
