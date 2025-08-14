@@ -818,8 +818,8 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 
 			auto intermediate_format = is_float ? VTFImageFormat::IMAGE_FORMAT_RGBA32323232F
 												: VTFImageFormat::IMAGE_FORMAT_RGBA8888;
-			for (int face = 0; face < face_count; ++face) {
-				for (int frame = 0; frame < frame_count; ++frame) {
+			for (auto face = 0; face < face_count; ++face) {
+				for (auto frame = 0; frame < frame_count; ++frame) {
 					auto orig_data = GetData(frame, face, 0, 0);
 					auto rgba_buffer = std::vector<uint8_t >(VTFLib::CVTFFile::ComputeImageSize(width, height, 1,
 																								intermediate_format));
@@ -829,7 +829,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 						return vlFalse;
 					}
 #undef max
-					for (int mip = 1; mip < mip_count; ++mip) {
+					for (auto mip = 1; mip < mip_count; ++mip) {
 						uint32_t mip_width = std::max(1u, width>>mip);
 						uint32_t mip_height = std::max(1u, height>>mip);
 						auto resized_buffer = (uint8_t *) stbir_resize(
