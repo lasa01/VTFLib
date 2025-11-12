@@ -122,10 +122,10 @@ typedef off_t	vlOffset;
 typedef off_t	vlSSize;
 typedef size_t	vlSize;
 
-typedef int8_t  vlUInt8;
-typedef int16_t vlUInt16;
-typedef int32_t vlUInt32;
-typedef int64_t vlUInt64;
+typedef uint8_t  vlUInt8;
+typedef uint16_t vlUInt16;
+typedef uint32_t vlUInt32;
+typedef uint64_t vlUInt64;
 
 typedef FILE*	vlFile;
 
