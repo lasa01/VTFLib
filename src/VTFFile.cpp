@@ -17,10 +17,15 @@
 #include "VTFDXTn.h"
 #include "VTFMathlib.h"
 
+#ifndef USE_NVDXT
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize2.h"
+#endif
+
 // Note: VTF creation requires nvDXTLib and has been
 //       tested with version 8.31.1127.1645, availible here:
 //       http://developer.nvidia.com/object/dds_utilities_legacy.html
-// 
+//
 //       Under Linux libtxc_dxtn is used. This only supports S3TC
 //       compression and not mipmap generation, image resizing or
 //       normal map conversion.
@@ -45,6 +50,10 @@
  */
 
 using namespace VTFLib;
+
+static stbir_filter remapFilter(tagVTFMipmapFilter vtf_filter);
+static stbir_datatype remapFormat(tagVTFImageFormat vtf_format);
+
 
 // Class construction
 // ------------------
@@ -353,7 +362,7 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, VTFLibError& Error, vlU
 
 			uiThumbnailWidth >>= 1;
 			uiThumbnailHeight >>= 1;
-			
+
 			if(uiThumbnailWidth < 1)
 				uiThumbnailWidth = 1;
 
@@ -769,8 +778,88 @@ vlBool CVTFFile::Create(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiFrames, vlUInt
 				}
 			}
 #else
-			Error.Set("NVDXT support required for CVTFFile::GenerateMipmaps().");
-			throw 0;
+
+
+			auto original_format = GetFormat();
+			auto face_count = GetFaceCount();
+			auto frame_count = GetFrameCount();
+			auto slice_count = GetDepth();
+			if (slice_count != 1) {
+				Error.Set("Mipmap generation for 3D textures is not implemented");
+				return vlFalse;
+			}
+
+			vlUInt width = GetWidth();
+			vlUInt height = GetHeight();
+
+            if (!VTFLib::CVTFFile::ConvertFromRGBA8888(*lpImageDataRGBA8888, GetData(0,0,0,0), width, height,
+                                                       VTFCreateOptions.ImageFormat,
+                                                       Error)) {
+                return vlFalse;
+            }
+
+
+            uint32_t mip_count = VTFLib::CVTFFile::ComputeMipmapCount(width, height, slice_count);
+            bool is_float = false;
+
+            const stbir_datatype data_type = remapFormat(VTFCreateOptions.ImageFormat);
+            switch (data_type) {
+                case STBIR_TYPE_UINT16:
+                case STBIR_TYPE_FLOAT:
+                case STBIR_TYPE_HALF_FLOAT:
+                    is_float = true;
+                    break;
+                default:
+                    break;
+            }
+
+            const stbir_filter filter = remapFilter(VTFCreateOptions.MipmapFilter);
+
+
+			auto intermediate_format = is_float ? VTFImageFormat::IMAGE_FORMAT_RGBA32323232F
+												: VTFImageFormat::IMAGE_FORMAT_RGBA8888;
+			for (vlUInt face = 0u; face < face_count; ++face) {
+				for (vlUInt frame = 0u; frame < frame_count; ++frame) {
+					auto orig_data = GetData(frame, face, 0, 0);
+					auto rgba_buffer = std::vector<uint8_t >(VTFLib::CVTFFile::ComputeImageSize(width, height, 1,
+																								intermediate_format));
+
+					if (!VTFLib::CVTFFile::Convert(orig_data, rgba_buffer.data(), width, height,
+												   original_format, intermediate_format, Error)) {
+						return vlFalse;
+					}
+#undef max
+					for (vlUInt mip = 1u; mip < mip_count; ++mip) {
+						uint32_t mip_width = std::max(1u, width>>mip);
+						uint32_t mip_height = std::max(1u, height>>mip);
+						auto resized_buffer = (uint8_t *) stbir_resize(
+								rgba_buffer.data(),
+								(int) width, (int) height, (int) (width * 4),
+								nullptr,
+								(int) mip_width, (int) mip_height,
+								(int) (mip_width * 4),
+								STBIR_RGBA,
+								is_float ? STBIR_TYPE_FLOAT : STBIR_TYPE_UINT8_SRGB_ALPHA,
+								STBIR_EDGE_CLAMP,
+								filter);
+						if (!resized_buffer) {
+							free(resized_buffer);
+							Error.Set("Failed to resize image data for mipmap generation");
+							return vlFalse;
+						}
+						auto mip_size = VTFLib::CVTFFile::ComputeImageSize(mip_width, mip_height, 1, original_format);
+						auto mip_buffer =  std::vector<uint8_t>(mip_size);
+						if (!VTFLib::CVTFFile::Convert(resized_buffer, mip_buffer.data(), mip_width, mip_height,
+													   intermediate_format, original_format, Error)) {
+							free(resized_buffer);
+							return vlFalse;
+						}
+						SetData(frame, face, 0, mip, mip_buffer.data());
+						free(resized_buffer);
+					}
+				}
+			}
+			return vlTrue;
 #endif
 		}
 		else
@@ -1145,7 +1234,7 @@ vlBool CVTFFile::Load(IO::Readers::IReader *Reader, vlBool bHeaderOnly, VTFLibEr
 			uiThumbnailBufferOffset = this->Header->HeaderSize;
 			uiImageDataOffset = uiThumbnailBufferOffset + this->uiThumbnailBufferSize;
 		}
-		
+
 		// sanity check
 		// headersize + lowbuffersize + buffersize *should* equal the filesize
 		if(this->Header->HeaderSize > uiFileSize || uiThumbnailBufferOffset + this->uiThumbnailBufferSize > uiFileSize || uiImageDataOffset + this->uiImageBufferSize > uiFileSize)
@@ -2208,7 +2297,7 @@ vlBool CVTFFile::GenerateMipmaps(vlUInt uiFace, vlUInt uiFrame, VTFLibError& Err
 	Options.user_data = &UserData;
 
 	vlByte *lpImageData = new vlByte[this->ComputeImageSize(this->Header->Width, this->Header->Height, 1, IMAGE_FORMAT_RGBA8888)];
-	
+
 	if(!this->ConvertToRGBA8888(this->GetData(uiFace, uiFrame, 0, 0), lpImageData, this->Header->Width, this->Header->Height, this->Header->ImageFormat))
 	{
 		delete []lpImageData;
@@ -2416,7 +2505,7 @@ struct SphereMapFace
 SphereMapFace SFace[6] =
 {
 	{0, {0, 0, -1}, {0, 1, 0}, {-1, 0, 0}, {-0.5, -0.5, 0.5}},	// left (lf)
-	{0, {1, 0, 0}, {0, 1, 0}, {0, 0, -1}, {-0.5, -0.5, -0.5}},	// down (dn) 
+	{0, {1, 0, 0}, {0, 1, 0}, {0, 0, -1}, {-0.5, -0.5, -0.5}},	// down (dn)
 	{0, {0, 0, 1}, {0, 1, 0}, {1, 0, 0}, {0.5, -0.5, -0.5}}, 	// right (rt)
 	{0, {-1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0.5, -0.5, 0.5}},	// up (up)
 	{0, {1, 0, 0}, {0, 0, 1}, {0, 1, 0}, {-0.5, 0.5, -0.5}},	// front (ft)
@@ -2462,7 +2551,7 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 
 	// lets go!
 	vlByte *lpImageData[6] = { 0, 0, 0, 0, 0, 0 };  					// 6 pointers to memory for our faces.
-	vlByte *lpSphereMapData = 0;					// SphereMap buffer 
+	vlByte *lpSphereMapData = 0;					// SphereMap buffer
 	vlUInt map[6] = {2, 0, 5, 4, 3, 1};		// used to remap valves face order to my face order.
 	vlUInt samples = 4;							// pixel samples for rendering
 
@@ -2470,27 +2559,27 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 	NColour c, texel, average;
 	Vector v, r, p;
 	vlSingle s, t, temp, k;
-	 
+
 	// load the faces into the buffers and convert as needed
 	for( i = 0; i < 6; i ++)
-	{ 
+	{
 		vlUInt j = map[i];		// Valve face order to my face order map.
 
-		lpImageData[j] = new vlByte[this->ComputeImageSize(uiWidth, uiHeight, 1, IMAGE_FORMAT_RGBA8888)]; 
-		
-		if(!this->ConvertToRGBA8888(this->GetData(0, i, 0, 0), lpImageData[j], uiWidth, uiHeight, this->Header->ImageFormat, Error)) 
-		{ 
-			for(vlUInt l = 0; l < 6; l++)  
-				delete[] lpImageData[l];  
-			
+		lpImageData[j] = new vlByte[this->ComputeImageSize(uiWidth, uiHeight, 1, IMAGE_FORMAT_RGBA8888)];
+
+		if(!this->ConvertToRGBA8888(this->GetData(0, i, 0, 0), lpImageData[j], uiWidth, uiHeight, this->Header->ImageFormat, Error))
+		{
+			for(vlUInt l = 0; l < 6; l++)
+				delete[] lpImageData[l];
+
 			Error.Set("Could not convert source to RGBA8888 format");
-			return vlFalse; 
-		} 
+			return vlFalse;
+		}
 		SFace[j].buf = (vlUInt *)lpImageData[j];	// save the address
 	}
 
 	// Assuming at this point our faces have loaded fine, create a buffer for the SphereMap
-	lpSphereMapData = new vlByte[this->ComputeImageSize(uiWidth, uiHeight, 1, IMAGE_FORMAT_RGBA8888)]; 
+	lpSphereMapData = new vlByte[this->ComputeImageSize(uiWidth, uiHeight, 1, IMAGE_FORMAT_RGBA8888)];
 
 	// At this point we need to flip 4 of the faces as follows as their "Valve" orientation
 	// is different to what the SphereMap rendering code needs.
@@ -2504,7 +2593,7 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 	this->MirrorImage(lpImageData[3], this->Header->Width, this->Header->Height);
 	this->FlipImage(lpImageData[4], this->Header->Width, this->Header->Height);
 	this->FlipImage(lpImageData[5], this->Header->Width, this->Header->Height);
-	
+
 	// disable conversion warning
 	//#pragma warning(disable: 4244)
 
@@ -2513,10 +2602,10 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 	// consistent with what Valves own SphereMaps look like.
 	vlUInt uiAvgR = 0, uiAvgG = 0, uiAvgB = 0;
 	vlUInt uiPixelCount = uiWidth * uiHeight;
-	
+
 	vlByte *src = lpImageData[3];	// 3 = up or forward face
 	vlByte *lpSourceEnd = src + (uiWidth * uiHeight * 4);
-	
+
 	for( ; src < lpSourceEnd; src += 4)
 	{
 		uiAvgR += src[0];
@@ -2524,7 +2613,7 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 		uiAvgB += src[2];
 	}
 
-	uiAvgR /= uiPixelCount; 
+	uiAvgR /= uiPixelCount;
 	uiAvgG /= uiPixelCount;
 	uiAvgB /= uiPixelCount;
 
@@ -2541,7 +2630,7 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 		for (x = 0; x < uiWidth; x++)
 		{
 			texel.r = texel.g = texel.b = 0.0f;
-		
+
 			for (j = 0; j < samples; j++)
 			{
 				s = ((vlSingle)x + (vlSingle)drand48()) / (vlSingle)uiWidth - 0.5f;
@@ -2551,9 +2640,9 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 				//point not on sphere so use the average colour
 				if (temp >= 0.25f)
 				{
-					texel.r += average.r;		
-					texel.g += average.g;		
-					texel.b += average.b;		
+					texel.r += average.r;
+					texel.g += average.g;
+					texel.b += average.b;
 					continue;
 				}
 
@@ -2585,7 +2674,7 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 				SphereMapFace *pf = &SFace[f];
 				vlUInt xpos, ypos;
 				vlByte *p;
-  
+
 				xpos = (vlUInt)(s * (vlSingle)uiWidth);
 				ypos = (vlUInt)(t * (vlSingle)uiHeight);
 
@@ -2598,7 +2687,7 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 				texel.g += c.g;
 				texel.b += c.b;
 			}
-	
+
 			// punch the pixel into our SphereMap image buffer
 			lpSphereMapDataPointer[0] = (vlByte)(255.0f * texel.r / (vlSingle)samples);
 			lpSphereMapDataPointer[1] = (vlByte)(255.0f * texel.g / (vlSingle)samples);
@@ -2623,7 +2712,7 @@ vlBool CVTFFile::GenerateSphereMap(VTFLibError& Error)
 		}
 		delete[] lpSphereMapData;
 
-		return vlFalse; 
+		return vlFalse;
 	};
 
 	// delete the memory buffers
@@ -2702,10 +2791,10 @@ vlBool CVTFFile::ComputeReflectivity(VTFLibError& Error)
 static SVTFImageFormatInfo VTFImageFormatInfo[] =
 {
 	{ "RGBA8888",			 32,  4,  8,  8,  8,  8, vlFalse,  vlTrue },		// IMAGE_FORMAT_RGBA8888,
-	{ "ABGR8888",			 32,  4,  8,  8,  8,  8, vlFalse,  vlTrue },		// IMAGE_FORMAT_ABGR8888, 
+	{ "ABGR8888",			 32,  4,  8,  8,  8,  8, vlFalse,  vlTrue },		// IMAGE_FORMAT_ABGR8888,
 	{ "RGB888",				 24,  3,  8,  8,  8,  0, vlFalse,  vlTrue },		// IMAGE_FORMAT_RGB888,
 	{ "BGR888",				 24,  3,  8,  8,  8,  0, vlFalse,  vlTrue },		// IMAGE_FORMAT_BGR888,
-	{ "RGB565",				 16,  2,  5,  6,  5,  0, vlFalse,  vlTrue },		// IMAGE_FORMAT_RGB565, 
+	{ "RGB565",				 16,  2,  5,  6,  5,  0, vlFalse,  vlTrue },		// IMAGE_FORMAT_RGB565,
 	{ "I8",					  8,  1,  0,  0,  0,  0, vlFalse,  vlTrue },		// IMAGE_FORMAT_I8,
 	{ "IA88",				 16,  2,  0,  0,  0,  8, vlFalse,  vlTrue },		// IMAGE_FORMAT_IA88
 	{ "P8",					  8,  1,  0,  0,  0,  0, vlFalse, vlFalse },		// IMAGE_FORMAT_P8
@@ -2766,7 +2855,7 @@ SVTFImageFormatInfo const &CVTFFile::GetImageFormatInfo(VTFImageFormat ImageForm
 
 //------------------------------------------------------------------------------------
 // ComputeImageSize(vlUInt uiWidth, vlUInt uiHeight, VTFImageFormat ImageFormat)
-// 
+//
 // Returns how many bytes are needed to store an image of width * height in the chosen
 // image format. If bMipMaps is true, the total will reflect the space needed to store
 // the original image plus all the mipmaps down to a size of 1 x 1
@@ -2812,7 +2901,7 @@ vlUInt CVTFFile::ComputeImageSize(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiDept
 	for(vlUInt i = 0; i < uiMipmaps; i++)
 	{
 		uiImageSize += CVTFFile::ComputeImageSize(uiWidth, uiHeight, uiDepth, ImageFormat);
-		
+
 		uiWidth >>= 1;
 		uiHeight >>= 1;
 		uiDepth >>= 1;
@@ -2844,7 +2933,7 @@ vlUInt CVTFFile::ComputeMipmapCount(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiDe
 	while(vlTrue)
 	{
 		uiCount++;
-		
+
 		uiWidth >>= 1;
 		uiHeight >>= 1;
 		uiDepth >>= 1;
@@ -2877,7 +2966,7 @@ vlVoid CVTFFile::ComputeMipmapDimensions(vlUInt uiWidth, vlUInt uiHeight, vlUInt
 	uiMipmapWidth = uiWidth >> uiMipmapLevel;
 	uiMipmapHeight = uiHeight >> uiMipmapLevel;
 	uiMipmapDepth = uiDepth >> uiMipmapLevel;
-	
+
 	// stop the dimension being less than 1 x 1
 	if(uiMipmapWidth < 1)
 		uiMipmapWidth = 1;
@@ -2892,14 +2981,14 @@ vlVoid CVTFFile::ComputeMipmapDimensions(vlUInt uiWidth, vlUInt uiHeight, vlUInt
 //-----------------------------------------------------------------------------
 // ComputeMIPSize( vlInt iMipLevel, VTFImageFormat fmt )
 //
-// Computes the size (in bytes) of a single mipmap of a single face of a single frame 
+// Computes the size (in bytes) of a single mipmap of a single face of a single frame
 //-----------------------------------------------------------------------------
 vlUInt CVTFFile::ComputeMipmapSize(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiDepth, vlUInt uiMipmapLevel, VTFImageFormat ImageFormat)
 {
 	// figure out the width/height of this MIP level
 	vlUInt uiMipmapWidth, uiMipmapHeight, uiMipmapDepth;
 	CVTFFile::ComputeMipmapDimensions(uiWidth, uiHeight, uiDepth, uiMipmapLevel, uiMipmapWidth, uiMipmapHeight, uiMipmapDepth);
-	
+
 	// return the memory requirements
 	return CVTFFile::ComputeImageSize(uiMipmapWidth, uiMipmapHeight, uiMipmapDepth, ImageFormat);
 }
@@ -2907,7 +2996,7 @@ vlUInt CVTFFile::ComputeMipmapSize(vlUInt uiWidth, vlUInt uiHeight, vlUInt uiDep
 //---------------------------------------------------------------------------------
 // ComputeDataOffset(vlUInt uiFrame, vlUInt uiFace, vlUInt uiMipLevel, VTFImageFormat ImageFormat)
 //
-// Returns the offset in our HiResDataBuffer of the data for an image at the 
+// Returns the offset in our HiResDataBuffer of the data for an image at the
 // chose frame, face, and mip level. Frame number starts at 0, Face starts at 0
 // MIP level 0 is the largest moving up to MIP count-1 for the smallest
 // To get the first, and largest image, you would use 0, 0, 0
@@ -2925,7 +3014,7 @@ vlUInt CVTFFile::ComputeDataOffset(vlUInt uiFrame, vlUInt uiFace, vlUInt uiSlice
 	{
 		uiFrame = uiFrameCount - 1;
 	}
-	
+
 	if(uiFace >= uiFaceCount)
 	{
 		uiFace = uiFaceCount - 1;
@@ -2956,7 +3045,7 @@ vlUInt CVTFFile::ComputeDataOffset(vlUInt uiFrame, vlUInt uiFace, vlUInt uiSlice
 	uiOffset += uiTemp2 * uiSlice;
 
 	assert(uiOffset < this->uiImageBufferSize);
-	
+
 	return uiOffset;
 }
 
@@ -3016,9 +3105,9 @@ vlBool CVTFFile::DecompressDXT1(const vlByte *src, vlByte *dst, vlUInt uiWidth, 
 
 			if (*((vlUShort*)color_0) > *((vlUShort*)color_1))
 			{
-				// Four-color block: derive the other two colors.    
+				// Four-color block: derive the other two colors.
 				// 00 = color_0, 01 = color_1, 10 = color_2, 11 = color_3
-				// These 2-bit codes correspond to the 2-bit fields 
+				// These 2-bit codes correspond to the 2-bit fields
 				// stored in the 64-bit block.
 				colours[2].b = (2 * colours[0].b + colours[1].b + 1) / 3;
 				colours[2].g = (2 * colours[0].g + colours[1].g + 1) / 3;
@@ -3035,8 +3124,8 @@ vlBool CVTFFile::DecompressDXT1(const vlByte *src, vlByte *dst, vlUInt uiWidth, 
 				// Three-color block: derive the other color.
 				// 00 = color_0,  01 = color_1,  10 = color_2,
 				// 11 = transparent.
-				// These 2-bit codes correspond to the 2-bit fields 
-				// stored in the 64-bit block. 
+				// These 2-bit codes correspond to the 2-bit fields
+				// stored in the 64-bit block.
 				colours[2].b = (colours[0].b + colours[1].b) / 2;
 				colours[2].g = (colours[0].g + colours[1].g) / 2;
 				colours[2].r = (colours[0].r + colours[1].r) / 2;
@@ -3113,9 +3202,9 @@ vlBool CVTFFile::DecompressDXT3(const vlByte *src, vlByte *dst, vlUInt uiWidth, 
 			colours[1].b = color_1->nBlue << 3;
 			colours[1].a = 0xFF;
 
-			// Four-color block: derive the other two colors.    
+			// Four-color block: derive the other two colors.
 			// 00 = color_0, 01 = color_1, 10 = color_2, 11 = color_3
-			// These 2-bit codes correspond to the 2-bit fields 
+			// These 2-bit codes correspond to the 2-bit fields
 			// stored in the 64-bit block.
 			colours[2].b = (2 * colours[0].b + colours[1].b + 1) / 3;
 			colours[2].g = (2 * colours[0].g + colours[1].g + 1) / 3;
@@ -3156,7 +3245,7 @@ vlBool CVTFFile::DecompressDXT3(const vlByte *src, vlByte *dst, vlUInt uiWidth, 
 						dst[Offset] = word & 0x0F;
 						dst[Offset] = dst[Offset] | (dst[Offset] << 4);
 					}
-					
+
 					word >>= 4;
 				}
 			}
@@ -3213,9 +3302,9 @@ vlBool CVTFFile::DecompressDXT5(const vlByte *src, vlByte *dst, vlUInt uiWidth, 
 			colours[1].b = color_1->nBlue << 3;
 			colours[1].a = 0xFF;
 
-			// Four-color block: derive the other two colors.    
+			// Four-color block: derive the other two colors.
 			// 00 = color_0, 01 = color_1, 10 = color_2, 11 = color_3
-			// These 2-bit codes correspond to the 2-bit fields 
+			// These 2-bit codes correspond to the 2-bit fields
 			// stored in the 64-bit block.
 			colours[2].b = (2 * colours[0].b + colours[1].b + 1) / 3;
 			colours[2].g = (2 * colours[0].g + colours[1].g + 1) / 3;
@@ -3245,21 +3334,21 @@ vlBool CVTFFile::DecompressDXT5(const vlByte *src, vlByte *dst, vlUInt uiWidth, 
 				}
 			}
 
-			// 8-alpha or 6-alpha block?    
+			// 8-alpha or 6-alpha block?
 			if (alphas[0] > alphas[1])
-			{ 
-				// 8-alpha block:  derive the other six alphas.    
+			{
+				// 8-alpha block:  derive the other six alphas.
 				// Bit code 000 = alpha_0, 001 = alpha_1, others are interpolated.
 				alphas[2] = (6 * alphas[0] + 1 * alphas[1] + 3) / 7;	// bit code 010
 				alphas[3] = (5 * alphas[0] + 2 * alphas[1] + 3) / 7;	// bit code 011
 				alphas[4] = (4 * alphas[0] + 3 * alphas[1] + 3) / 7;	// bit code 100
 				alphas[5] = (3 * alphas[0] + 4 * alphas[1] + 3) / 7;	// bit code 101
 				alphas[6] = (2 * alphas[0] + 5 * alphas[1] + 3) / 7;	// bit code 110
-				alphas[7] = (1 * alphas[0] + 6 * alphas[1] + 3) / 7;	// bit code 111  
-			}    
+				alphas[7] = (1 * alphas[0] + 6 * alphas[1] + 3) / 7;	// bit code 111
+			}
 			else
-			{  
-				// 6-alpha block.    
+			{
+				// 6-alpha block.
 				// Bit code 000 = alpha_0, 001 = alpha_1, others are interpolated.
 				alphas[2] = (4 * alphas[0] + 1 * alphas[1] + 2) / 5;	// Bit code 010
 				alphas[3] = (3 * alphas[0] + 2 * alphas[1] + 2) / 5;	// Bit code 011
@@ -3507,7 +3596,7 @@ static SVTFImageConvertInfo VTFImageConvertInfo[] =
 	{	 32,  4,  8,  8,  8,  8,	 0,	 1,	 2,	-1,	vlFalse,  vlTrue,	NULL,	NULL,		IMAGE_FORMAT_LINEAR_RGB888},
 	{	 32,  4,  8,  8,  8,  8,	 2,	 1,	 0,	-1,	vlFalse,  vlTrue,	NULL,	NULL,		IMAGE_FORMAT_LINEAR_BGR888},
 	{ 	 16,  2,  5,  5,  5,  0,	 2,	 1,	 0,	-1, vlFalse,  vlTrue,	NULL,	NULL,		IMAGE_FORMAT_LINEAR_BGRX5551},
-	{	  8,  1,  8,  8,  8,  0,	 0,	-1,	-1,	-1, vlFalse,  vlTrue,	ToLuminance,	FromLuminance,	IMAGE_FORMAT_LINEAR_I8},	
+	{	  8,  1,  8,  8,  8,  0,	 0,	-1,	-1,	-1, vlFalse,  vlTrue,	ToLuminance,	FromLuminance,	IMAGE_FORMAT_LINEAR_I8},
 	{	 64,  8, 16, 16, 16, 16,	 0,	 1,	 2,	 3, vlFalse,  vlTrue,	NULL,	NULL,		IMAGE_FORMAT_LINEAR_RGBA16161616}*/
 };
 
@@ -4033,17 +4122,13 @@ vlBool CVTFFile::Resize(const vlByte *lpSourceRGBA8888, vlByte *lpDestRGBA8888, 
 
 	return nvDXTCompressWrapper(lpSourceRGBA8888, uiSourceWidth, uiSourceHeight, &Options, NVWriteCallback);
 #else
-	(void)lpSourceRGBA8888;
-	(void)lpDestRGBA8888;
-	(void)uiSourceWidth;
-	(void)uiSourceHeight;
-	(void)uiDestWidth;
-	(void)uiDestHeight;
-	(void)ResizeFilter;
-	(void)SharpenFilter;
+    (void)(SharpenFilter);
+    (void)(Error);
+	stbir_resize((void *) lpSourceRGBA8888, (int)uiSourceWidth, (int)uiSourceHeight, (int)uiSourceWidth * 4, lpDestRGBA8888,
+				 (int)uiDestWidth, (int)uiDestHeight, (int)uiDestWidth * 4, stbir_pixel_layout::STBIR_RGBA,
+				 stbir_datatype::STBIR_TYPE_UINT8_SRGB_ALPHA, stbir_edge::STBIR_EDGE_CLAMP, remapFilter(ResizeFilter));
 
-	Error.Set("NVDXT support required for CVTFFile::Resize().");
-	return vlFalse;
+	return vlTrue;
 #endif
 }
 
@@ -4191,5 +4276,48 @@ vlVoid CVTFFile::MirrorImage(vlByte *lpImageDataRGBA8888, vlUInt uiWidth, vlUInt
 			*pOne = *pTwo;
 			*pTwo = uiTemp;
 		}
+	}
+}
+
+static stbir_datatype remapFormat(tagVTFImageFormat vtf_format){
+	switch (vtf_format) {
+		case VTFImageFormat::IMAGE_FORMAT_RGBA32323232F:
+		case VTFImageFormat::IMAGE_FORMAT_RGB323232F:
+		case VTFImageFormat::IMAGE_FORMAT_R32F:
+			return stbir_datatype::STBIR_TYPE_FLOAT;
+		case VTFImageFormat::IMAGE_FORMAT_RGBA16161616F:
+			return stbir_datatype::STBIR_TYPE_HALF_FLOAT;
+		case VTFImageFormat::IMAGE_FORMAT_RGBA16161616:
+			return stbir_datatype ::STBIR_TYPE_UINT16;
+		default:
+			return stbir_datatype ::STBIR_TYPE_UINT8_SRGB_ALPHA;
+	}
+}
+
+static stbir_filter remapFilter(tagVTFMipmapFilter vtf_filter){
+	switch (vtf_filter) {
+		case MIPMAP_FILTER_POINT:
+			return STBIR_FILTER_POINT_SAMPLE;
+		case MIPMAP_FILTER_BOX:
+		case MIPMAP_FILTER_COUNT:
+			return STBIR_FILTER_BOX;
+		case MIPMAP_FILTER_TRIANGLE:
+			return STBIR_FILTER_TRIANGLE;
+		case MIPMAP_FILTER_QUADRATIC:
+		case MIPMAP_FILTER_CUBIC:
+			return STBIR_FILTER_CUBICBSPLINE;
+		case MIPMAP_FILTER_CATROM:
+			return STBIR_FILTER_CATMULLROM;
+		case MIPMAP_FILTER_MITCHELL:
+			return STBIR_FILTER_MITCHELL;
+		case MIPMAP_FILTER_GAUSSIAN:
+		case MIPMAP_FILTER_SINC:
+		case MIPMAP_FILTER_BESSEL:
+		case MIPMAP_FILTER_HANNING:
+		case MIPMAP_FILTER_HAMMING:
+		case MIPMAP_FILTER_BLACKMAN:
+		case MIPMAP_FILTER_KAISER:
+		default:
+			return STBIR_FILTER_CUBICBSPLINE;
 	}
 }
